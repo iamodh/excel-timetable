@@ -77,13 +77,13 @@
 
 | 항목 | 선택 |
 |------|------|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS 4 |
 | Data Source | Google Sheets API v4 (read-only) |
 | Auth | 서비스 계정 (Service Account) — 서버 사이드 전용 |
 | Deployment | Vercel |
-| Package Manager | pnpm |
+| Package Manager | npm |
 | Node.js | 20+ |
 
 ### 4.2 애플리케이션 아키텍처

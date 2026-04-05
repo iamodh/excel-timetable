@@ -8,7 +8,7 @@
 
 > 📖 TECHSPEC 섹션 4.1 참조
 
-**완료 조건:** `pnpm dev`로 로컬 서버 실행 시 기본 페이지 표시
+**완료 조건:** `npm run dev`로 로컬 서버 실행 시 기본 페이지 표시
 
 - Commits:
 
@@ -77,7 +77,7 @@
 - [ ] 헤더 영역 파싱: programName, period, location, totalHours 추출
 - [ ] 빈 셀 처리
 
-**완료 조건:** `pnpm test` 전체 통과
+**완료 조건:** `npm test` 전체 통과
 
 - Commits:
 

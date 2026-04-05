@@ -42,8 +42,8 @@
 
 1. **Test First**: 가장 첫 번째 미완료 테스트 케이스를 작성한다
 2. **Minimal Code**: 테스트를 통과시키는 최소한의 코드만 작성한다
-3. **Lint**: `pnpm lint` 전체 실행 (ESLint + TypeScript 타입 체크)
-4. **Run Tests**: `pnpm test` 실행
+3. **Lint**: `npm run lint` 전체 실행 (ESLint + TypeScript 타입 체크)
+4. **Run Tests**: `npm test` 실행
 5. **Report & Wait**: 결과를 보고하고 사용자 확인을 기다린다
 
 > ⚠️ 이후 자동 진행 금지. 사용자 피드백에 따라 수정하거나 `commit`을 기다린다.
@@ -59,7 +59,7 @@
 
 **제안 범위:**
 - 브라우저에서 확인할 수 있는 URL과 기대 동작 (UI 마일스톤인 경우)
-- `pnpm lint`, `pnpm test` 등 CLI 명령어
+- `npm run lint`, `npm test` 등 CLI 명령어
 - Chrome DevTools 모바일 에뮬레이터 확인 (모바일 관련 마일스톤)
 
 **규칙:**
@@ -81,13 +81,13 @@
 
 ```bash
 # 구현 사이클 (파일 편집/추가/삭제 후)
-pnpm lint        # ESLint + TypeScript 타입 체크
+npm run lint     # ESLint + TypeScript 타입 체크
 
 # 테스트 실행 (통과할 때까지 반복)
-pnpm test
+npm test
 
 # 앱 정상 로드 확인
-pnpm dev         # http://localhost:3000 접속하여 확인
+npm run dev      # http://localhost:3000 접속하여 확인
 ```
 
 ### 마일스톤 규칙
@@ -121,7 +121,7 @@ pnpm dev         # http://localhost:3000 접속하여 확인
 
 ## CONSTRAINTS
 
-### pnpm 사용 규칙
+### npm 사용 규칙
 
 - 새로운 패키지를 사용하기 전에 반드시 `package.json`에 존재하는지 확인
 - 없으면 코드 작성 전에 추가 필요 여부를 먼저 알려줄 것
@@ -136,11 +136,8 @@ pnpm dev         # http://localhost:3000 접속하여 확인
 
 ### BRANCH RULES
 
-- main 브랜치에 직접 커밋 금지
-- 마일스톤 시작 시 `feat/m{번호}-{설명}` 브랜치를 생성하고 전환한다
-- 브랜치 생성/전환/머지는 사용자가 직접 수행
-- 에이전트는 브랜치 생성/전환/커밋을 수행하되, 머지와 push는 하지 않는다
-- 코드 작성 전 반드시 확인: (1) 현재 브랜치가 작업 대상 마일스톤과 일치하는지 (2) 이전 마일스톤 브랜치가 main에 머지되었고 현재 브랜치에 반영되었는지
+- main 브랜치에서 직접 작업한다 (별도 feature 브랜치 생성 금지)
+- 에이전트는 커밋을 수행하되, push는 하지 않는다
 
 ---
 
