@@ -8,9 +8,9 @@
 
 > 📖 TECHSPEC 섹션 4.1 참조
 
-**완료 조건:** `npm run dev`로 로컬 서버 실행 시 기본 페이지 표시
+**완료 조건:** `npm run dev`로 로컬 서버 실행 시 기본 페이지 표시 ✅
 
-- Commits:
+- Commits: d05a37b, 9eeb709
 
 ---
 
