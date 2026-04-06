@@ -20,16 +20,16 @@
 
 **작업 (수동)**
 
-- [ ] Google Cloud Console에서 프로젝트 생성
-- [ ] Google Sheets API 활성화
-- [ ] 서비스 계정 생성 + JSON 키 다운로드
-- [ ] 시간표 Google Sheets 생성 (실제 시간표 구조로 샘플 데이터 입력)
-- [ ] 시트를 서비스 계정 이메일에 "뷰어" 권한으로 공유
-- [ ] `.env.local`에 `GOOGLE_SERVICE_ACCOUNT_KEY`, `GOOGLE_SHEET_ID` 설정
+- [x] Google Cloud Console에서 프로젝트 생성
+- [x] Google Sheets API 활성화
+- [x] 서비스 계정 생성 + JSON 키 다운로드
+- [x] 시간표 Google Sheets 생성 (실제 시간표 구조로 샘플 데이터 입력)
+- [x] 시트를 서비스 계정 이메일에 "뷰어" 권한으로 공유
+- [x] `.env.local`에 `GOOGLE_SERVICE_ACCOUNT_KEY`, `GOOGLE_SHEET_ID` 설정
 
-**완료 조건:** 서비스 계정으로 시트 데이터 접근 가능 확인 (API Explorer 또는 curl)
+**완료 조건:** 서비스 계정으로 시트 데이터 접근 가능 확인 (API Explorer 또는 curl) ✅
 
-- Commits:
+- Commits: 수동 작업 (코드 커밋 없음)
 
 ---
 
