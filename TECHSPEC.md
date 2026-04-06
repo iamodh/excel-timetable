@@ -12,6 +12,7 @@
 | 셀 병합 표시 | 2시간 이상 연속 수업은 병합된 셀로 표시 |
 | 공휴일/휴무 표시 | 어린이날, 근로자의 날 등 특수일 표시 |
 | 헤더 정보 표시 | 프로그램명, 기간, 교육장소, 총 이수시간 표시 |
+| 카테고리 범례 표시 | 시트 헤더의 카테고리 색상 범례를 웹 상단에 표시 (밀착상담, 사례관리, 외부연계 등) |
 
 ### 1.2 관리자 기능
 
@@ -25,7 +26,7 @@
 | 캐시 갱신 | On-demand Revalidation — 관리자가 웹에서 "최신화" 버튼 클릭 시 캐시 갱신 (rate limit: 1분에 1회) |
 | 셀 병합 판별 | Google Sheets API의 mergedCells 정보를 사용하여 병합 범위 결정 |
 | 카테고리 색상 | 시트 셀 배경색(RGB)을 웹에 그대로 적용 (매핑 테이블 없음) |
-| 시트 구조 | v1에서는 고정 구조 가정 — 구조 변경 시 파싱 로직 수정 필요 |
+| 시트 구조 | 주차별 시트 탭 (시트명: "1주차", "2주차", ...). 각 탭은 동일한 구조 (헤더 + 시간×요일 그리드). v1에서는 고정 구조 가정 |
 
 ### 1.4 에러 처리
 
@@ -159,6 +160,7 @@ DB 없음. Google Sheets → 파싱 → 내부 TypeScript 타입으로 변환.
 | period | string | 교육 기간 (예: "2026.04.07~2026.05.11") |
 | location | string | 교육장소 (예: "청년어울림센터(장유)") |
 | totalHours | string | 총 이수시간 (예: "40h") |
+| categories | Category[] | 카테고리 색상 범례 (시트 헤더 영역에서 파싱) |
 | weeks | Week[] | 주차별 시간표 배열 |
 
 **Week**
@@ -190,7 +192,15 @@ DB 없음. Google Sheets → 파싱 → 내부 TypeScript 타입으로 변환.
 | rowSpan | number | 병합 행 수 (기본 1, 2시간 수업이면 2) |
 | isMergedContinuation | boolean | 병합된 셀의 연속 부분인지 여부 |
 
-카테고리 enum 없음. 시트의 셀 배경색 RGB를 hex 문자열로 변환하여 웹에 그대로 적용한다.
+**Category**
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| name | string | 카테고리명 (예: "밀착상담", "사례관리", "외부연계") |
+| color | string | 배경색 hex (예: "#F4A460") |
+
+카테고리 enum 없음. 시트 헤더의 범례 행에서 카테고리명과 배경색을 파싱한다 (하드코딩 아님).
+각 슬롯의 bgColor는 항상 해당 셀의 배경색에서 직접 추출한다. 카테고리 범례와 색상이 일치하면 카테고리를 알 수 있고, 일치하는 카테고리가 없는 셀도 배경색은 그대로 표시된다.
 시트에서 색상을 변경하면 웹에도 자동 반영된다.
 
 ---
@@ -198,6 +208,9 @@ DB 없음. Google Sheets → 파싱 → 내부 TypeScript 타입으로 변환.
 ## 7. 핵심 구현 로직
 
 ### 7.1 Google Sheets 데이터 페칭
+
+스프레드시트는 **주차별 시트 탭** 구조. 각 탭은 동일한 레이아웃(헤더 + 시간×요일 그리드)을 가진다.
+`includeGridData: true`로 한 번의 API 호출로 모든 탭의 셀 데이터·배경색·병합 정보를 가져온다.
 
 ```typescript
 // lib/sheets.ts
@@ -209,13 +222,23 @@ async function fetchTimetableData(): Promise<TimetableData> {
 
   const sheets = google.sheets({ version: 'v4', auth })
 
-  // includeGridData: true로 셀 배경색 정보 포함
+  // includeGridData: true로 모든 시트 탭의 셀 배경색·병합 정보 포함
   const response = await sheets.spreadsheets.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID!,
     includeGridData: true,
   })
 
-  return parseSheetData(response.data)
+  // response.data.sheets = [
+  //   { properties: { title: "1주차" }, data: [...], merges: [...] },
+  //   { properties: { title: "2주차" }, data: [...], merges: [...] },
+  //   ...
+  // ]
+  // 각 시트 탭을 순회하며 동일한 파싱 로직 적용
+  const sheetTabs = response.data.sheets ?? []
+  const weeks = sheetTabs.map((tab, i) => parseWeekSheet(tab, i + 1))
+  const header = parseHeader(sheetTabs[0]) // 헤더는 첫 번째 탭에서 추출
+
+  return { ...header, weeks }
 }
 ```
 
@@ -234,6 +257,8 @@ function toHexColor(bgColor?: { red?: number; green?: number; blue?: number }): 
 ```
 
 ### 7.3 셀 병합 처리
+
+각 시트 탭 내에서 병합 정보를 처리한다. 모든 탭이 동일한 구조이므로 같은 함수를 재사용.
 
 ```typescript
 // lib/parser.ts
