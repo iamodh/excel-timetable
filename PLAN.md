@@ -41,12 +41,12 @@
 
 **Unit Tests**
 
-- [ ] 환경변수 미설정 시 명확한 에러 발생
-- [ ] API 응답을 받아 raw 데이터 반환 확인
+- [x] 환경변수 미설정 시 명확한 에러 발생
+- [x] API 응답을 받아 raw 데이터 반환 확인
 
-**완료 조건:** `fetchTimetableData()` 호출 시 실제 시트 데이터(raw)가 콘솔에 출력됨
+**완료 조건:** `fetchTimetableData()` 호출 시 실제 시트 데이터(raw)가 콘솔에 출력됨 ✅
 
-- Commits:
+- Commits: eadc918, 8b69f8f
 
 ---
 
