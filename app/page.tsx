@@ -53,7 +53,7 @@ function WeekGrid({ week }: { week: Week }) {
     <div className="mb-6">
       <h2 className="mb-2 text-lg font-semibold">{week.weekNumber}주차</h2>
       <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-        <table className="w-full border-collapse text-sm" style={{ tableLayout: "fixed" }}>
+        <table className="border-collapse text-sm" style={{ tableLayout: "fixed", minWidth: 700 }}>
           <colgroup>
             <col style={{ width: 120 }} />
             {week.days.map((day) => (
