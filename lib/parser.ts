@@ -143,3 +143,65 @@ export function applyMerges(slots: MergeableSlot[][], merges: MergeRange[]): voi
     }
   }
 }
+
+const GRID_START = 4
+const WEEK_ROWS = 9
+
+interface Day {
+  dayOfWeek: string
+  date: string
+  isHoliday: boolean
+  holidayName: string | null
+  slots: Slot[]
+}
+
+interface Week {
+  weekNumber: number
+  days: Day[]
+}
+
+interface TimetableData {
+  programName: string
+  period: string
+  location: string
+  totalHours: string
+  categories: Category[]
+  weeks: Week[]
+}
+
+export function parseTimetable(rowData: RowData[], merges: MergeRange[]): TimetableData {
+  const categories = parseCategories(rowData.slice(0, 2))
+  const header = parseHeader(rowData.slice(2, 4))
+  const gridRows = rowData.slice(GRID_START)
+
+  const weeks: Week[] = []
+  for (let i = 0; i + WEEK_ROWS <= gridRows.length; i += WEEK_ROWS) {
+    const weekBlock = gridRows.slice(i, i + WEEK_ROWS)
+    const weekHeader = parseWeekHeader(weekBlock[0])
+    const slotRows = weekBlock.slice(1)
+    const grid = parseGridSlots(slotRows)
+
+    // 그리드 영역 병합 적용 (오프셋 보정: 전체 시트 기준 → 슬롯 기준)
+    const slotStartRow = GRID_START + i + 1
+    const gridMerges = merges
+      .filter((m) => m.startRowIndex >= slotStartRow && m.endRowIndex <= slotStartRow + slotRows.length)
+      .map((m) => ({
+        ...m,
+        startRowIndex: m.startRowIndex - slotStartRow,
+        endRowIndex: m.endRowIndex - slotStartRow,
+      }))
+    applyMerges(grid, gridMerges)
+
+    const days: Day[] = weekHeader.days.map((dh, colIdx) => ({
+      dayOfWeek: dh.dayOfWeek,
+      date: dh.date,
+      isHoliday: false,
+      holidayName: null,
+      slots: grid.map((row) => row[colIdx]),
+    }))
+
+    weeks.push({ weekNumber: weekHeader.weekNumber, days })
+  }
+
+  return { ...header, categories, weeks }
+}
