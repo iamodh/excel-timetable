@@ -58,7 +58,7 @@
 
 **완료 조건:** 파싱 결과가 TimetableData 타입과 일치하고, 셀 값·배경색·병합 정보가 정확함
 
-- Commits:
+- Commits: 89c036d
 
 ---
 
