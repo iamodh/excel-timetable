@@ -70,16 +70,16 @@
 
 **Unit Tests (P0)**
 
-- [ ] RGB(0~1) → hex 변환 정확성 (예: `{red: 0.66, green: 0.84, blue: 0.63}` → `#a8d6a1`)
-- [ ] 배경색 없는 셀 → `#ffffff` 반환
-- [ ] 병합 셀 처리: rowSpan 값 정확성 (2시간 수업 → rowSpan: 2)
-- [ ] 병합 연속 셀: isMergedContinuation = true
-- [ ] 헤더 영역 파싱: programName, period, location, totalHours 추출
-- [ ] 빈 셀 처리
+- [x] RGB(0~1) → hex 변환 정확성 (예: `{red: 0.66, green: 0.84, blue: 0.63}` → `#a8d6a1`)
+- [x] 배경색 없는 셀 → `#ffffff` 반환
+- [x] 병합 셀 처리: rowSpan 값 정확성 (2시간 수업 → rowSpan: 2)
+- [x] 병합 연속 셀: isMergedContinuation = true
+- [x] 헤더 영역 파싱: programName, period, location, totalHours 추출
+- [x] 빈 셀 처리
 
-**완료 조건:** `npm test` 전체 통과
+**완료 조건:** `npm test` 전체 통과 ✅
 
-- Commits:
+- Commits: d808784, 02221e8
 
 ---
 
@@ -216,11 +216,11 @@
 
 | 마일스톤 | 테스트 | 상태 |
 |---------|--------|------|
-| M4-T | RGB(0~1) → hex 변환 정확성 | [ ] |
-| M4-T | 배경색 없는 셀 → #ffffff | [ ] |
-| M4-T | 병합 셀 rowSpan 값 정확성 | [ ] |
-| M4-T | 병합 연속 셀 isMergedContinuation | [ ] |
-| M4-T | 헤더 영역 파싱 정확성 | [ ] |
-| M4-T | 빈 셀 처리 | [ ] |
+| M4-T | RGB(0~1) → hex 변환 정확성 | [x] |
+| M4-T | 배경색 없는 셀 → #ffffff | [x] |
+| M4-T | 병합 셀 rowSpan 값 정확성 | [x] |
+| M4-T | 병합 연속 셀 isMergedContinuation | [x] |
+| M4-T | 헤더 영역 파싱 정확성 | [x] |
+| M4-T | 빈 셀 처리 | [x] |
 | M9 | rate limit 60초 이내 429 응답 | [ ] |
 | M9 | rate limit 경과 후 200 응답 | [ ] |
