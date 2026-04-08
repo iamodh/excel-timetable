@@ -26,7 +26,7 @@
 | 캐시 갱신 | On-demand Revalidation — 관리자가 웹에서 "최신화" 버튼 클릭 시 캐시 갱신 (rate limit: 1분에 1회) |
 | 셀 병합 판별 | Google Sheets API의 mergedCells 정보를 사용하여 병합 범위 결정 |
 | 카테고리 색상 | 시트 셀 배경색(RGB)을 웹에 그대로 적용 (매핑 테이블 없음) |
-| 시트 구조 | 주차별 시트 탭 (시트명: "1주차", "2주차", ...). 각 탭은 동일한 구조 (헤더 + 시간×요일 그리드). v1에서는 고정 구조 가정 |
+| 시트 구조 | 회차별 시트 탭 (시트명: "장기1기 - 2회차" 등). 각 탭은 동일한 구조 (헤더 + 주차별 시간×요일 그리드 반복). v1에서는 고정 구조 가정 |
 
 ### 1.4 에러 처리
 
@@ -227,7 +227,7 @@ DB 없음. Google Sheets → 파싱 → 내부 TypeScript 타입으로 변환.
 
 ### 7.1 Google Sheets 데이터 페칭
 
-스프레드시트는 **주차별 시트 탭** 구조. 각 탭은 동일한 레이아웃(헤더 + 시간×요일 그리드)을 가진다.
+스프레드시트는 **회차별 시트 탭** 구조. 각 탭은 동일한 레이아웃(범례 + 헤더 + 주차별 시간×요일 그리드 반복)을 가진다.
 `includeGridData: true`로 한 번의 API 호출로 모든 탭의 셀 데이터·배경색·병합 정보를 가져온다.
 
 ```typescript
@@ -247,14 +247,15 @@ async function fetchTimetableData(): Promise<TimetableData> {
   })
 
   // response.data.sheets = [
-  //   { properties: { title: "1주차" }, data: [...], merges: [...] },
-  //   { properties: { title: "2주차" }, data: [...], merges: [...] },
+  //   { properties: { title: "장기1기 - 2회차" }, data: [...], merges: [...] },
   //   ...
   // ]
-  // 각 시트 탭을 순회하며 동일한 파싱 로직 적용
+  // 각 시트 탭(회차)을 순회하며 동일한 파싱 로직 적용
+  // 탭 내부에서 주차는 9행 단위 반복으로 분리
   const sheetTabs = response.data.sheets ?? []
-  const weeks = sheetTabs.map((tab, i) => parseWeekSheet(tab, i + 1))
-  const header = parseHeader(sheetTabs[0]) // 헤더는 첫 번째 탭에서 추출
+  const firstTab = sheetTabs[0]
+  const header = parseHeader(firstTab)
+  const weeks = parseWeeks(firstTab) // 단일 탭 내 9행 단위로 주차 분리
 
   return { ...header, weeks }
 }
