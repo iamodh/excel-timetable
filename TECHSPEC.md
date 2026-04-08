@@ -8,7 +8,7 @@
 |------|------|
 | PIN 인증 | 최초 접속 시 공유 PIN 입력 → 쿠키 저장으로 재입력 불필요 |
 | 시간표 열람 | PIN 인증 후 최신 시간표를 그리드 뷰로 확인 |
-| 주차별 탐색 | 1~5주차 탭 또는 네비게이션으로 주차 전환 |
+| 회차별 탐색 | 회차 탭으로 시트 탭 간 전환 (회차 수는 시트 탭 수에 따라 동적) |
 | 카테고리 색상 구분 | 시트의 셀 배경색을 그대로 웹에 적용하여 시각적 구분 |
 | 셀 병합 표시 | 2시간 이상 연속 수업은 병합된 셀로 표시 |
 | 공휴일/휴무 표시 | 어린이날, 근로자의 날 등 특수일 표시 |
@@ -75,7 +75,7 @@
 | 4 | 셀 배경색 적용 | 시트 배경색 RGB → 웹 셀 배경색으로 직접 적용 |
 | 5 | 시간표 그리드 컴포넌트 | 주차별 × 요일 × 시간대 테이블 렌더링 (셀 병합 포함) |
 | 6 | 헤더 영역 컴포넌트 | 프로그램명, 기간, 장소, 이수시간 표시 |
-| 7 | 주차 네비게이션 | 1~5주차 탭 전환 UI |
+| 7 | 회차 네비게이션 | 회차 탭 전환 UI (시트 탭 수에 따라 동적) |
 | 8 | 공휴일/휴무 표시 | 특수일 셀 스타일링 |
 | 9 | 모바일 반응형 | 시트와 동일한 테이블 레이아웃 + 가로 스크롤 (배포 후 뷰 확인하여 조정) |
 | 10 | PIN 접근 제어 | PIN 입력 페이지 + 미들웨어 검증 + 쿠키 저장 + Vercel KV 연동 |
@@ -161,7 +161,7 @@
 | `POST /api/pin` | Route Handler | PIN 변경 (관리자 전용) |
 | `POST /api/notice` | Route Handler | 공지 작성/삭제 (관리자 전용) |
 
-주차 전환은 클라이언트에서 탭 전환 (페이지 새로고침 없음). PIN 미인증 시 `/pin`으로 리다이렉트.
+회차 전환은 클라이언트에서 탭 전환 (페이지 새로고침 없음). 각 회차 내 주차는 한 페이지에 모두 렌더링. PIN 미인증 시 `/pin`으로 리다이렉트.
 
 ---
 
@@ -321,25 +321,26 @@ function processMergedCells(
 }
 ```
 
-### 7.4 주차 전환 (클라이언트)
+### 7.4 회차 전환 (클라이언트)
 
 ```typescript
-// components/WeekTabs.tsx (Client Component)
+// components/SessionTabs.tsx (Client Component)
 "use client";
 
-export function WeekTabs({ weeks }: { weeks: Week[] }) {
-  const [currentWeek, setCurrentWeek] = useState(() => determineCurrentWeek(weeks));
+// 회차 탭: 시트 탭 수에 따라 동적 생성. 주차는 한 페이지에 모두 렌더링.
+export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
+  const [current, setCurrent] = useState(0);
 
   return (
     <>
       <nav>
-        {weeks.map((w) => (
-          <button key={w.weekNumber} onClick={() => setCurrentWeek(w.weekNumber)}>
-            {w.weekNumber}주차
+        {sessions.map((s, i) => (
+          <button key={s.programName} onClick={() => setCurrent(i)}>
+            {s.programName}
           </button>
         ))}
       </nav>
-      <TimetableGrid week={weeks[currentWeek - 1]} />
+      <TimetableView data={sessions[current]} />
     </>
   );
 }
@@ -431,20 +432,22 @@ export default async function TimetablePage({
 }
 ```
 
-### 7.8 현재 주차 자동 판별
+### 7.8 현재 회차 자동 판별
 
 ```typescript
 // lib/utils.ts
-function determineCurrentWeek(weeks: Week[]): number {
+function determineCurrentSession(sessions: TimetableData[]): number {
   const today = new Date()
-  for (const week of weeks) {
-    for (const day of week.days) {
-      if (isSameDate(today, parseDate(day.date))) {
-        return week.weekNumber
+  for (let i = 0; i < sessions.length; i++) {
+    for (const week of sessions[i].weeks) {
+      for (const day of week.days) {
+        if (isSameDate(today, parseDate(day.date))) {
+          return i
+        }
       }
     }
   }
-  return 1
+  return 0
 }
 ```
 
@@ -461,7 +464,7 @@ function determineCurrentWeek(weeks: Week[]): number {
 | 3 | 셀 배경색 적용 정확성 | 유닛 테스트 — RGB(0~1) → hex 변환 |
 | 4 | 셀 병합 렌더링 (rowSpan 적용) | 수동 테스트 — 2시간 연속 수업 확인 |
 | 5 | 모바일 레이아웃 정상 표시 | 수동 테스트 — 모바일 디바이스/에뮬레이터 |
-| 6 | 주차 전환 동작 | 수동 테스트 — 탭 클릭 시 올바른 주차 표시 |
+| 6 | 회차 전환 동작 | 수동 테스트 — 탭 클릭 시 올바른 회차 표시 |
 
 ### 8.2 추가 검증 항목 (P1)
 
@@ -470,7 +473,7 @@ function determineCurrentWeek(weeks: Week[]): number {
 | 1 | 최신화 버튼 동작 확인 | 시트 수정 → 관리자 페이지에서 최신화 → 페이지 갱신 확인 |
 | 2 | 공휴일/휴무 표시 | 수동 테스트 — 해당 일자 셀 스타일 확인 |
 | 3 | API 에러 시 폴백 UI | 네트워크 차단 후 에러 메시지 표시 확인 |
-| 4 | 현재 주차 자동 판별 | 수동 테스트 — 날짜 변경하며 확인 |
+| 4 | 회차 탭 전환 동작 | 수동 테스트 — 탭 클릭 시 회차 전환 확인 |
 | 5 | PIN 미입력 시 /pin 리다이렉트 | 쿠키 없이 / 접속 → /pin으로 이동 확인 |
 | 6 | 잘못된 PIN 입력 시 에러 표시 | 틀린 PIN 입력 → 에러 메시지 확인 |
 | 7 | 관리자 PIN 변경 후 즉시 적용 | 관리자 페이지에서 PIN 변경 → 기존 PIN으로 접근 실패 확인 |
