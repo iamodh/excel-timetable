@@ -53,9 +53,9 @@ function WeekGrid({ week }: { week: Week }) {
     <div className="mb-6">
       <h2 className="mb-2 text-lg font-semibold">{week.weekNumber}주차</h2>
       <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-        <table className="w-full table-fixed border-collapse text-sm">
+        <table className="w-full border-collapse text-sm" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col className="w-[72px]" />
+            <col style={{ width: 120 }} />
             {week.days.map((day) => (
               <col key={day.date} />
             ))}
