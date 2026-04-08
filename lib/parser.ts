@@ -189,6 +189,8 @@ export function parseTimetable(rowData: RowData[], merges: MergeRange[]): Timeta
         ...m,
         startRowIndex: m.startRowIndex - slotStartRow,
         endRowIndex: m.endRowIndex - slotStartRow,
+        startColumnIndex: m.startColumnIndex - 1,
+        endColumnIndex: m.endColumnIndex - 1,
       }))
     applyMerges(grid, gridMerges)
 
