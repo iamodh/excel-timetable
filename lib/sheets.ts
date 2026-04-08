@@ -1,4 +1,5 @@
 import { google } from "googleapis"
+import { parseTimetable, type TimetableData } from "./parser"
 
 export async function fetchTimetableData() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
@@ -24,4 +25,18 @@ export async function fetchTimetableData() {
   })
 
   return response.data
+}
+
+export async function getTimetableData(): Promise<TimetableData> {
+  const spreadsheet = await fetchTimetableData()
+  const firstSheet = spreadsheet.sheets?.[0]
+  const rowData = (firstSheet?.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
+  const merges = (firstSheet?.merges ?? []) as {
+    startRowIndex: number
+    endRowIndex: number
+    startColumnIndex: number
+    endColumnIndex: number
+  }[]
+
+  return parseTimetable(rowData, merges)
 }

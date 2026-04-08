@@ -23,7 +23,7 @@ interface RowData {
   values?: CellData[]
 }
 
-interface Category {
+export interface Category {
   name: string
   color: string
 }
@@ -93,7 +93,7 @@ export function parseHeader(rowData: RowData[]): Header {
   return { programName, period, location, totalHours }
 }
 
-interface Slot {
+export interface Slot {
   startTime: string
   endTime: string
   title: string
@@ -147,7 +147,7 @@ export function applyMerges(slots: MergeableSlot[][], merges: MergeRange[]): voi
 const GRID_START = 4
 const WEEK_ROWS = 9
 
-interface Day {
+export interface Day {
   dayOfWeek: string
   date: string
   isHoliday: boolean
@@ -155,12 +155,12 @@ interface Day {
   slots: Slot[]
 }
 
-interface Week {
+export interface Week {
   weekNumber: number
   days: Day[]
 }
 
-interface TimetableData {
+export interface TimetableData {
   programName: string
   period: string
   location: string
