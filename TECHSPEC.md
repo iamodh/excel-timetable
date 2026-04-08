@@ -6,7 +6,8 @@
 
 | 기능 | 설명 |
 |------|------|
-| 시간표 열람 | 공유 링크 접속 시 최신 시간표를 그리드 뷰로 확인 |
+| PIN 인증 | 최초 접속 시 공유 PIN 입력 → 쿠키 저장으로 재입력 불필요 |
+| 시간표 열람 | PIN 인증 후 최신 시간표를 그리드 뷰로 확인 |
 | 주차별 탐색 | 1~5주차 탭 또는 네비게이션으로 주차 전환 |
 | 카테고리 색상 구분 | 시트의 셀 배경색을 그대로 웹에 적용하여 시각적 구분 |
 | 셀 병합 표시 | 2시간 이상 연속 수업은 병합된 셀로 표시 |
@@ -16,14 +17,23 @@
 
 ### 1.2 관리자 기능
 
-별도 관리자 페이지/인증 없음. 관리자는 Google Sheets에서 직접 시간표를 편집하며, 웹에 자동 반영된다.
+별도 관리자 비밀번호로 관리자 페이지 접근. 관리자 1~2명, 서로 신뢰 관계 전제.
+
+| 기능 | 설명 |
+|------|------|
+| PIN 변경 | 학생용 공유 PIN을 즉시 변경 (유출 시 또는 주기적) |
+| 시간표 최신화 | Google Sheets 변경 후 웹 캐시 갱신 (rate limit: 1분에 1회) |
+| 공지 작성 | "PIN 변경됨", "4월 시간표 업데이트" 등 안내 메시지 게시 |
 
 ### 1.3 비즈니스 규칙
 
 | 규칙 | 설명 |
 |------|------|
 | 데이터 소스 | Google Sheets가 유일한 데이터 소스 (Single Source of Truth) |
-| 캐시 갱신 | On-demand Revalidation — 관리자가 웹에서 "최신화" 버튼 클릭 시 캐시 갱신 (rate limit: 1분에 1회) |
+| PIN 인증 | 학생은 공유 PIN 입력 후 시간표 열람 가능. PIN은 쿠키에 저장 (만료: 30일). Vercel KV에 저장 (관리자 페이지에서 변경 가능, 재배포 시에도 유지) |
+| 관리자 인증 | 별도 비밀번호 (`ADMIN_PASSWORD` 환경변수). PIN보다 강한 인증. 쿠키에 저장 (만료: 7일). 비밀번호는 환경변수에 고정 (변경 빈도 낮음, 보안상 KV보다 안전) |
+| 캐시 갱신 | On-demand Revalidation — 관리자가 관리자 페이지에서 "최신화" 버튼 클릭 시 캐시 갱신 (rate limit: 1분에 1회) |
+| 공지 | 관리자가 작성한 공지를 시간표 상단에 표시. Vercel KV에 저장 |
 | 셀 병합 판별 | Google Sheets API의 mergedCells 정보를 사용하여 병합 범위 결정 |
 | 카테고리 색상 | 시트 셀 배경색(RGB)을 웹에 그대로 적용 (매핑 테이블 없음) |
 | 시트 구조 | 회차별 시트 탭 (시트명: "장기1기 - 2회차" 등). 각 탭은 동일한 구조 (헤더 + 주차별 시간×요일 그리드 반복). v1에서는 고정 구조 가정 |
@@ -37,6 +47,8 @@
 | 스프레드시트 ID 미설정 | 500 | "시간표 설정이 완료되지 않았습니다." |
 | API 할당량 초과 | 429 | "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." |
 | 캐시된 데이터 사용 불가 | 503 | "시간표를 불러올 수 없습니다. 잠시 후 다시 시도해주세요." |
+| PIN 불일치 | 401 | PIN 입력 페이지 재표시 + "PIN이 올바르지 않습니다." |
+| 관리자 비밀번호 불일치 | 401 | "비밀번호가 올바르지 않습니다." |
 
 ---
 
@@ -50,7 +62,6 @@
 
 - 시간표 변경 알림 (카카오톡 / 웹 푸시)
 - 여러 기수/프로그램 지원 (멀티 시트)
-- 관리자 웹 UI 추가
 
 ---
 
@@ -67,8 +78,9 @@
 | 7 | 주차 네비게이션 | 1~5주차 탭 전환 UI |
 | 8 | 공휴일/휴무 표시 | 특수일 셀 스타일링 |
 | 9 | 모바일 반응형 | 시트와 동일한 테이블 레이아웃 + 가로 스크롤 (배포 후 뷰 확인하여 조정) |
-| 10 | 최신화 기능 | /api/revalidate 엔드포인트 + 최신화 버튼 UI + rate limit |
-| 11 | Vercel 배포 | 환경변수 설정, 배포 파이프라인 구성 |
+| 10 | PIN 접근 제어 | PIN 입력 페이지 + 미들웨어 검증 + 쿠키 저장 + Vercel KV 연동 |
+| 11 | 관리자 기능 | 관리자 인증 (환경변수) + PIN 변경 (KV) + 시간표 최신화 (rate limit) + 공지 작성 (KV) |
+| 12 | Vercel 배포 | 환경변수 설정 (ADMIN_PASSWORD, KV 연결), 배포 파이프라인 구성 |
 
 ---
 
@@ -83,6 +95,7 @@
 | Styling | Tailwind CSS 4 |
 | Data Source | Google Sheets API v4 (read-only) |
 | Auth | 서비스 계정 (Service Account) — 서버 사이드 전용 |
+| KV Store | Vercel KV — PIN, 공지 저장 (무료 티어) |
 | Deployment | Vercel |
 | Package Manager | npm |
 | Node.js | 20+ |
@@ -117,14 +130,14 @@
 ### 4.3 배포 아키텍처
 
 ```
-[학생 모바일 브라우저]
-        │
-        │ HTTPS (공유 링크)
-        ▼
-   [Vercel CDN/Edge]
+[학생 모바일 브라우저]          [관리자 브라우저]
+        │                           │
+        │ HTTPS (공유 링크)          │ /admin (비밀번호 인증)
+        ▼                           ▼
+   [Vercel CDN/Edge] ◄── PIN 미들웨어 검증
         │
         │ 캐시 히트 → 즉시 응답
-        │ 최신화 버튼 클릭 시 → 서버 재렌더링
+        │ 관리자 최신화 시 → 서버 재렌더링
         ▼
    [Next.js Server]
         │
@@ -139,10 +152,16 @@
 
 | 경로 | 타입 | 설명 |
 |------|------|------|
-| `/` | Page (RSC) | 시간표 메인 페이지. 전체 주차 데이터를 한 번에 로드 |
-| `POST /api/revalidate` | Route Handler | 최신화 요청 (rate limit: 60초) |
+| `/` | Page (RSC) | 시간표 메인 페이지. PIN 인증 후 접근 가능 |
+| `/pin` | Page | PIN 입력 페이지 |
+| `/admin` | Page | 관리자 페이지 (비밀번호 인증 후 접근) |
+| `POST /api/auth/pin` | Route Handler | PIN 검증 → 쿠키 설정 |
+| `POST /api/auth/admin` | Route Handler | 관리자 비밀번호 검증 → 쿠키 설정 |
+| `POST /api/revalidate` | Route Handler | 시간표 최신화 (rate limit: 60초, 관리자 전용) |
+| `POST /api/pin` | Route Handler | PIN 변경 (관리자 전용) |
+| `POST /api/notice` | Route Handler | 공지 작성/삭제 (관리자 전용) |
 
-단일 페이지 앱. 주차 전환은 클라이언트에서 탭 전환 (페이지 새로고침 없음).
+주차 전환은 클라이언트에서 탭 전환 (페이지 새로고침 없음). PIN 미인증 시 `/pin`으로 리다이렉트.
 
 ---
 
@@ -326,33 +345,79 @@ export function WeekTabs({ weeks }: { weeks: Week[] }) {
 }
 ```
 
-### 7.5 On-demand Revalidation + 최신화 버튼
+### 7.5 PIN 접근 제어
+
+```typescript
+// middleware.ts
+import { NextRequest, NextResponse } from "next/server"
+
+const PUBLIC_PATHS = ["/pin", "/api/auth/pin"]
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  const pin = request.cookies.get("student_pin")?.value
+  const storedPin = await kv.get("student_pin") // Vercel KV에서 조회
+  if (pin !== storedPin) {
+    return NextResponse.redirect(new URL("/pin", request.url))
+  }
+
+  return NextResponse.next()
+}
+```
+
+### 7.6 관리자 인증 + 기능
+
+```typescript
+// app/api/auth/admin/route.ts
+export async function POST(request: Request) {
+  const { password } = await request.json()
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return Response.json({ message: "비밀번호가 올바르지 않습니다." }, { status: 401 })
+  }
+  // 쿠키에 관리자 토큰 설정 (만료: 7일)
+  // ...
+}
+```
+
+관리자 페이지(`/admin`)에서 제공하는 기능:
+- **PIN 변경**: `POST /api/pin` — 새 PIN 설정 → Vercel KV에 저장 (재배포 시에도 유지)
+- **시간표 최신화**: `POST /api/revalidate` — rate limit 60초, `revalidatePath("/")` 호출
+- **공지 작성**: `POST /api/notice` — Vercel KV에 저장, 시간표 상단에 표시
+
+### 7.7 On-demand Revalidation (관리자 전용)
 
 ```typescript
 // app/api/revalidate/route.ts
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "next/cache"
 
-const RATE_LIMIT_SECONDS = 60;
-let lastRevalidated = 0;
+const RATE_LIMIT_SECONDS = 60
+let lastRevalidated = 0
 
-export async function POST() {
-  const now = Date.now();
+export async function POST(request: Request) {
+  // 관리자 쿠키 검증
+  // ...
+
+  const now = Date.now()
   if (now - lastRevalidated < RATE_LIMIT_SECONDS * 1000) {
     return Response.json(
       { message: "잠시 후 다시 시도해주세요." },
       { status: 429 }
-    );
+    )
   }
 
-  lastRevalidated = now;
-  revalidatePath("/");
-  return Response.json({ message: "시간표가 최신화되었습니다." });
+  lastRevalidated = now
+  revalidatePath("/")
+  return Response.json({ message: "시간표가 최신화되었습니다." })
 }
 ```
 
 ```typescript
 // app/page.tsx
-export const revalidate = false; // 자동 갱신 없음, 버튼으로만 갱신
+export const revalidate = false // 자동 갱신 없음, 관리자 최신화로만 갱신
 
 export default async function TimetablePage({
   searchParams,
@@ -366,7 +431,7 @@ export default async function TimetablePage({
 }
 ```
 
-### 7.6 현재 주차 자동 판별
+### 7.8 현재 주차 자동 판별
 
 ```typescript
 // lib/utils.ts
@@ -402,10 +467,14 @@ function determineCurrentWeek(weeks: Week[]): number {
 
 | # | 항목 | 검증 방법 |
 |---|------|----------|
-| 1 | 최신화 버튼 동작 확인 | 시트 수정 → 버튼 클릭 → 페이지 갱신 확인 |
+| 1 | 최신화 버튼 동작 확인 | 시트 수정 → 관리자 페이지에서 최신화 → 페이지 갱신 확인 |
 | 2 | 공휴일/휴무 표시 | 수동 테스트 — 해당 일자 셀 스타일 확인 |
 | 3 | API 에러 시 폴백 UI | 네트워크 차단 후 에러 메시지 표시 확인 |
 | 4 | 현재 주차 자동 판별 | 수동 테스트 — 날짜 변경하며 확인 |
+| 5 | PIN 미입력 시 /pin 리다이렉트 | 쿠키 없이 / 접속 → /pin으로 이동 확인 |
+| 6 | 잘못된 PIN 입력 시 에러 표시 | 틀린 PIN 입력 → 에러 메시지 확인 |
+| 7 | 관리자 PIN 변경 후 즉시 적용 | 관리자 페이지에서 PIN 변경 → 기존 PIN으로 접근 실패 확인 |
+| 8 | 공지 작성/표시 | 관리자 페이지에서 공지 작성 → 시간표 상단에 표시 확인 |
 
 ### 8.3 테스트 도구
 
