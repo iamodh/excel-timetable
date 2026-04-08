@@ -1,65 +1,110 @@
-import Image from "next/image";
+import { getTimetableData } from "@/lib/sheets"
+import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 
-export default function Home() {
+export default async function TimetablePage() {
+  const data = await getTimetableData()
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen bg-zinc-50 p-4">
+      <TimetableHeader data={data} />
+      <CategoryLegend categories={data.categories} />
+      {data.weeks.map((week) => (
+        <WeekGrid key={week.weekNumber} week={week} />
+      ))}
     </div>
-  );
+  )
+}
+
+function TimetableHeader({ data }: { data: TimetableData }) {
+  return (
+    <header className="mb-4 rounded-lg bg-white p-4 shadow-sm">
+      <h1 className="text-xl font-bold">{data.programName}</h1>
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-zinc-600">
+        <span>기간: {data.period}</span>
+        <span>장소: {data.location}</span>
+        <span>이수시간: {data.totalHours}</span>
+      </div>
+    </header>
+  )
+}
+
+function CategoryLegend({ categories }: { categories: Category[] }) {
+  if (categories.length === 0) return null
+
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {categories.map((cat) => (
+        <span
+          key={cat.name}
+          className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs"
+          style={{ backgroundColor: cat.color }}
+        >
+          {cat.name}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function WeekGrid({ week }: { week: Week }) {
+  const timeSlots = week.days[0]?.slots ?? []
+
+  return (
+    <div className="mb-6">
+      <h2 className="mb-2 text-lg font-semibold">{week.weekNumber}주차</h2>
+      <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-zinc-100">
+              <th className="border border-zinc-200 px-3 py-2 text-center font-medium">시간</th>
+              {week.days.map((day) => (
+                <th key={day.date} className="border border-zinc-200 px-3 py-2 text-center font-medium">
+                  <div>{day.date}</div>
+                  <div className="text-xs text-zinc-500">({day.dayOfWeek})</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {timeSlots.map((_, timeIdx) => (
+              <tr key={timeIdx}>
+                <td className="border border-zinc-200 px-3 py-2 text-center text-xs text-zinc-500 whitespace-nowrap">
+                  {week.days[0]?.slots[timeIdx]?.startTime}~{week.days[0]?.slots[timeIdx]?.endTime}
+                </td>
+                {week.days.map((day) => {
+                  const slot = day.slots[timeIdx]
+                  if (!slot || slot.isMergedContinuation) return null
+
+                  return (
+                    <SlotCell key={day.date} slot={slot} />
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function SlotCell({ slot }: { slot: Slot }) {
+  const isEmpty = !slot.title
+
+  return (
+    <td
+      className="border border-zinc-200 px-3 py-2 text-center"
+      rowSpan={slot.rowSpan > 1 ? slot.rowSpan : undefined}
+      style={!isEmpty ? { backgroundColor: slot.bgColor } : undefined}
+    >
+      {slot.title && (
+        <>
+          <div className="font-medium text-sm">{slot.title}</div>
+          {slot.subtitle && (
+            <div className="text-xs text-zinc-600 mt-0.5">{slot.subtitle}</div>
+          )}
+        </>
+      )}
+    </td>
+  )
 }
