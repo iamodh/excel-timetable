@@ -40,11 +40,12 @@
 
 ### `go` - 구현 사이클
 
-1. **Test First**: 가장 첫 번째 미완료 테스트 케이스를 작성한다
-2. **Minimal Code**: 테스트를 통과시키는 최소한의 코드만 작성한다
-3. **Lint**: `npm run lint` 전체 실행 (ESLint + TypeScript 타입 체크)
-4. **Run Tests**: `npm test` 실행
-5. **Report & Wait**: 결과를 보고하고 사용자 확인을 기다린다
+1. **Check**: `git status`로 미커밋 변경사항 확인 — 있으면 먼저 커밋 또는 사용자에게 보고
+2. **Test First**: 가장 첫 번째 미완료 테스트 케이스를 작성한다
+3. **Minimal Code**: 테스트를 통과시키는 최소한의 코드만 작성한다
+4. **Lint**: `npm run lint` 전체 실행 (ESLint + TypeScript 타입 체크)
+5. **Run Tests**: `npm test` 실행
+6. **Report & Wait**: 결과를 보고하고 사용자 확인을 기다린다
 
 > ⚠️ 이후 자동 진행 금지. 사용자 피드백에 따라 수정하거나 `commit`을 기다린다.
 
