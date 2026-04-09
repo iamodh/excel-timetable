@@ -28,15 +28,22 @@ export async function fetchTimetableData() {
 }
 
 export async function getTimetableData(): Promise<TimetableData> {
-  const spreadsheet = await fetchTimetableData()
-  const firstSheet = spreadsheet.sheets?.[0]
-  const rowData = (firstSheet?.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
-  const merges = (firstSheet?.merges ?? []) as {
-    startRowIndex: number
-    endRowIndex: number
-    startColumnIndex: number
-    endColumnIndex: number
-  }[]
+  const sessions = await getAllTimetableData()
+  return sessions[0]
+}
 
-  return parseTimetable(rowData, merges)
+export async function getAllTimetableData(): Promise<TimetableData[]> {
+  const spreadsheet = await fetchTimetableData()
+  const sheetTabs = spreadsheet.sheets ?? []
+
+  return sheetTabs.map((sheet) => {
+    const rowData = (sheet.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
+    const merges = (sheet.merges ?? []) as {
+      startRowIndex: number
+      endRowIndex: number
+      startColumnIndex: number
+      endColumnIndex: number
+    }[]
+    return parseTimetable(rowData, merges)
+  })
 }
