@@ -65,18 +65,24 @@ function CategoryLegend({ categories }: { categories: Category[] }) {
   )
 }
 
+const COL_WIDTH = 120
+
 function WeekGrid({ week }: { week: Week }) {
   const timeSlots = week.days[0]?.slots ?? []
+  const tableWidth = (week.days.length + 1) * COL_WIDTH
 
   return (
     <div className="mb-6">
       <h2 className="mb-2 text-lg font-semibold">{week.weekNumber}주차</h2>
       <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
-        <table className="border-collapse text-sm" style={{ tableLayout: "fixed" }}>
+        <table
+          className="border-collapse text-sm"
+          style={{ tableLayout: "fixed", width: tableWidth }}
+        >
           <colgroup>
-            <col style={{ width: 120 }} />
+            <col style={{ width: COL_WIDTH }} />
             {week.days.map((day) => (
-              <col key={day.date} style={{ width: 120 }} />
+              <col key={day.date} style={{ width: COL_WIDTH }} />
             ))}
           </colgroup>
           <thead>
