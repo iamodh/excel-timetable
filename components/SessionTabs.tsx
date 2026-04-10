@@ -124,7 +124,9 @@ function SlotCell({ slot }: { slot: Slot }) {
     >
       {slot.title && (
         <>
-          <div className="font-medium">{slot.title}</div>
+          <div className="font-medium" style={{ color: slot.textColor }}>
+            {slot.title}
+          </div>
           {slot.subtitle && (
             <div className="text-zinc-600 mt-0.5">{slot.subtitle}</div>
           )}

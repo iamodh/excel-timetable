@@ -1,4 +1,4 @@
-import { toHexColor } from "./color"
+import { toHexColor, toTextColor } from "./color"
 
 interface MergeRange {
   startRowIndex: number
@@ -16,6 +16,9 @@ interface CellData {
   formattedValue?: string
   effectiveFormat?: {
     backgroundColor?: { red?: number; green?: number; blue?: number }
+    textFormat?: {
+      foregroundColor?: { red?: number; green?: number; blue?: number }
+    }
   }
 }
 
@@ -99,6 +102,7 @@ export interface Slot {
   title: string
   subtitle: string | null
   bgColor: string
+  textColor: string
   rowSpan: number
   isMergedContinuation: boolean
 }
@@ -125,6 +129,7 @@ export function parseGridSlots(rowData: RowData[]): Slot[][] {
         title,
         subtitle,
         bgColor: toHexColor(cell.effectiveFormat?.backgroundColor),
+        textColor: toTextColor(cell.effectiveFormat?.textFormat?.foregroundColor),
         rowSpan: 1,
         isMergedContinuation: false,
       }

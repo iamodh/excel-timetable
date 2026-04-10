@@ -131,6 +131,28 @@ describe("parseWeekHeader", () => {
 })
 
 describe("parseGridSlots", () => {
+  it("폰트 색상(foregroundColor)을 textColor로 추출하며, 지정되지 않은 셀은 #000000을 반환한다", () => {
+    const rowData = [
+      {
+        values: [
+          { formattedValue: "09:00~10:00" },
+          {
+            formattedValue: "어린이날",
+            effectiveFormat: {
+              textFormat: { foregroundColor: { red: 1, green: 0, blue: 0 } },
+            },
+          },
+          { formattedValue: "정상 수업" }, // textFormat 없음
+        ],
+      },
+    ]
+
+    const slots = parseGridSlots(rowData)
+
+    expect(slots[0][0].textColor).toBe("#ff0000")
+    expect(slots[0][1].textColor).toBe("#000000")
+  })
+
   it("셀 값과 배경색을 파싱하고, 빈 셀은 빈 title과 #ffffff로 처리한다", () => {
     // 2행(시간대) x 열0(시간) + 열1~2(요일 2개) 최소 그리드
     const rowData = [
