@@ -155,8 +155,6 @@ const WEEK_ROWS = 9
 export interface Day {
   dayOfWeek: string
   date: string
-  isHoliday: boolean
-  holidayName: string | null
   slots: Slot[]
 }
 
@@ -202,8 +200,6 @@ export function parseTimetable(rowData: RowData[], merges: MergeRange[]): Timeta
     const days: Day[] = weekHeader.days.map((dh, colIdx) => ({
       dayOfWeek: dh.dayOfWeek,
       date: dh.date,
-      isHoliday: false,
-      holidayName: null,
       slots: grid.map((row) => row[colIdx]),
     }))
 

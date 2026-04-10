@@ -15,8 +15,6 @@ function makeSession(dates: string[]): TimetableData {
         days: dates.map((date) => ({
           dayOfWeek: "월",
           date,
-          isHoliday: false,
-          holidayName: null,
           slots: [],
         })),
       },
