@@ -22,7 +22,7 @@
 | 기능 | 설명 |
 |------|------|
 | PIN 변경 | 학생용 공유 PIN을 즉시 변경 (유출 시 또는 주기적) |
-| 시간표 최신화 | Google Sheets 변경 후 웹 캐시 갱신 (rate limit: 1분에 1회) |
+| 시간표 최신화 | Google Sheets 변경 후 웹 캐시 갱신 (관리자 전용이므로 rate limit 없음) |
 | 공지 작성 | "PIN 변경됨", "4월 시간표 업데이트" 등 안내 메시지 게시 |
 
 ### 1.3 비즈니스 규칙
@@ -32,7 +32,7 @@
 | 데이터 소스 | Google Sheets가 유일한 데이터 소스 (Single Source of Truth) |
 | PIN 인증 | 학생은 공유 PIN 입력 후 시간표 열람 가능. PIN은 쿠키에 저장 (만료: 30일). Vercel KV에 저장 (관리자 페이지에서 변경 가능, 재배포 시에도 유지) |
 | 관리자 인증 | 별도 비밀번호 (`ADMIN_PASSWORD` 환경변수). PIN보다 강한 인증. 쿠키에 저장 (만료: 7일). 비밀번호는 환경변수에 고정 (변경 빈도 낮음, 보안상 KV보다 안전) |
-| 캐시 갱신 | On-demand Revalidation — 관리자가 관리자 페이지에서 "최신화" 버튼 클릭 시 캐시 갱신 (rate limit: 1분에 1회) |
+| 캐시 갱신 | On-demand Revalidation — 관리자가 관리자 페이지에서 "최신화" 버튼 클릭 시 캐시 갱신 |
 | 공지 | 관리자가 작성한 공지를 시간표 상단에 표시. Vercel KV에 저장 |
 | 셀 병합 판별 | Google Sheets API의 mergedCells 정보를 사용하여 병합 범위 결정 |
 | 카테고리 색상 | 시트 셀 배경색(RGB)을 웹에 그대로 적용 (매핑 테이블 없음) |
@@ -79,7 +79,7 @@
 | 8 | 폰트 색상 반영 | 셀 폰트 색상(foregroundColor)을 웹에 적용 — 공휴일 등 구분용 |
 | 9 | 모바일 반응형 | 시트와 동일한 테이블 레이아웃 + 가로 스크롤 (배포 후 뷰 확인하여 조정) |
 | 10 | PIN 접근 제어 | PIN 입력 페이지 + 미들웨어 검증 + 쿠키 저장 + Vercel KV 연동 |
-| 11 | 관리자 기능 | 관리자 인증 (환경변수) + PIN 변경 (KV) + 시간표 최신화 (rate limit) + 공지 작성 (KV) |
+| 11 | 관리자 기능 | 관리자 인증 (환경변수) + PIN 변경 (KV) + 시간표 최신화 + 공지 작성 (KV) |
 | 12 | Vercel 배포 | 환경변수 설정 (ADMIN_PASSWORD, KV 연결), 배포 파이프라인 구성 |
 
 ---
@@ -157,7 +157,7 @@
 | `/admin` | Page | 관리자 페이지 (비밀번호 인증 후 접근) |
 | `POST /api/auth/pin` | Route Handler | PIN 검증 → 쿠키 설정 |
 | `POST /api/auth/admin` | Route Handler | 관리자 비밀번호 검증 → 쿠키 설정 |
-| `POST /api/revalidate` | Route Handler | 시간표 최신화 (rate limit: 60초, 관리자 전용) |
+| `POST /api/revalidate` | Route Handler | 시간표 최신화 (관리자 전용) |
 | `POST /api/pin` | Route Handler | PIN 변경 (관리자 전용) |
 | `POST /api/notice` | Route Handler | 공지 작성/삭제 (관리자 전용) |
 
@@ -385,7 +385,7 @@ export async function POST(request: Request) {
 
 관리자 페이지(`/admin`)에서 제공하는 기능:
 - **PIN 변경**: `POST /api/pin` — 새 PIN 설정 → Vercel KV에 저장 (재배포 시에도 유지)
-- **시간표 최신화**: `POST /api/revalidate` — rate limit 60초, `revalidatePath("/")` 호출
+- **시간표 최신화**: `POST /api/revalidate` — `revalidatePath("/")` 호출
 - **공지 작성**: `POST /api/notice` — Vercel KV에 저장, 시간표 상단에 표시
 
 ### 7.7 On-demand Revalidation (관리자 전용)
@@ -394,26 +394,16 @@ export async function POST(request: Request) {
 // app/api/revalidate/route.ts
 import { revalidatePath } from "next/cache"
 
-const RATE_LIMIT_SECONDS = 60
-let lastRevalidated = 0
-
 export async function POST(request: Request) {
   // 관리자 쿠키 검증
   // ...
 
-  const now = Date.now()
-  if (now - lastRevalidated < RATE_LIMIT_SECONDS * 1000) {
-    return Response.json(
-      { message: "잠시 후 다시 시도해주세요." },
-      { status: 429 }
-    )
-  }
-
-  lastRevalidated = now
   revalidatePath("/")
   return Response.json({ message: "시간표가 최신화되었습니다." })
 }
 ```
+
+관리자 전용이므로 rate limit 없음 (신뢰 전제).
 
 ```typescript
 // app/page.tsx
