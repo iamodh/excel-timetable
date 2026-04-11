@@ -162,23 +162,41 @@
 
 ### Milestone 11: PIN 접근 제어
 
-**목표:** 공유 PIN으로 시간표 접근 제한 — Vercel KV에 PIN 저장, 미인증 시 PIN 입력 페이지로 리다이렉트
+**목표:** 공유 PIN으로 시간표 접근 제한 — Upstash Redis에 PIN 저장, 미인증 시 PIN 입력 페이지로 리다이렉트
 
 > 📖 TECHSPEC 섹션 7.5 참조
+> 📖 notes/redis-upstash-supabase.md, notes/cookies.md 참조
 
 **Unit Tests**
 
-- [ ] PIN 일치 시 쿠키 설정 + 200 응답
+- [x] PIN 일치 시 쿠키 설정 + 200 응답
 - [ ] PIN 불일치 시 401 응답
+
+**Implementation**
+
+- [x] `@upstash/redis` 설치
+- [x] `lib/pin.ts` — `getStoredPin()` (Upstash에서 `student_pin` 키 조회)
+- [x] `app/api/auth/pin/route.ts` — POST 핸들러 (PIN 검증 + 쿠키 설정)
+- [ ] `app/pin/page.tsx` — PIN 입력 페이지 (Client Component, form submit)
+- [ ] `middleware.ts` — 쿠키 검증 + 미인증 시 `/pin` 리다이렉트
+
+**Upstash 세팅 (수동 작업)**
+
+- [ ] https://console.upstash.com 가입 (GitHub/Google OAuth)
+- [ ] Create Database — 이름 `kimhae-timetable-dev`, 리전 `ap-northeast-1` (도쿄), Free plan
+- [ ] `.env.local`에 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 추가
+- [ ] Upstash 콘솔 Data Browser에서 초기 PIN 설정: `SET student_pin 1234`
+- [ ] Vercel 프로젝트 환경변수에도 동일한 두 값 주입 (배포 환경용)
 
 **Manual Tests**
 
 - [ ] 쿠키 없이 `/` 접속 → `/pin`으로 리다이렉트
-- [ ] 올바른 PIN 입력 → 시간표 페이지로 이동
-- [ ] 잘못된 PIN 입력 → 에러 메시지 표시
-- [ ] PIN 인증 후 재접속 시 PIN 재입력 불필요 (쿠키)
+- [ ] 올바른 PIN 입력 → 시간표 페이지로 이동 + `student_pin` 쿠키 생성 확인 (DevTools Application 탭)
+- [ ] 잘못된 PIN 입력 → "PIN이 올바르지 않습니다." 에러 메시지 표시
+- [ ] PIN 인증 후 재접속 시 PIN 재입력 불필요 (쿠키 자동 전송)
+- [ ] Upstash 콘솔에서 PIN 변경 후 기존 쿠키로 접근 → `/pin` 리다이렉트 (진실원 분리 검증)
 
-**완료 조건:** PIN 미인증 사용자는 시간표 접근 불가, 인증 후 쿠키로 자동 인증
+**완료 조건:** PIN 미인증 사용자는 시간표 접근 불가, 인증 후 쿠키로 자동 인증, Upstash에서 PIN 변경 시 기존 세션 즉시 무효화
 
 - Commits:
 

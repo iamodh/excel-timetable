@@ -30,10 +30,10 @@
 | 규칙 | 설명 |
 |------|------|
 | 데이터 소스 | Google Sheets가 유일한 데이터 소스 (Single Source of Truth) |
-| PIN 인증 | 학생은 공유 PIN 입력 후 시간표 열람 가능. PIN은 쿠키에 저장 (만료: 30일). Vercel KV에 저장 (관리자 페이지에서 변경 가능, 재배포 시에도 유지) |
+| PIN 인증 | 학생은 공유 PIN 입력 후 시간표 열람 가능. PIN은 쿠키에 저장 (만료: 30일). KV 스토어에 저장 (관리자 페이지에서 변경 가능, 재배포 시에도 유지). 구체 구현은 §4.1 참조 |
 | 관리자 인증 | 별도 비밀번호 (`ADMIN_PASSWORD` 환경변수). PIN보다 강한 인증. 쿠키에 저장 (만료: 7일). 비밀번호는 환경변수에 고정 (변경 빈도 낮음, 보안상 KV보다 안전) |
 | 캐시 갱신 | On-demand Revalidation — 관리자가 관리자 페이지에서 "최신화" 버튼 클릭 시 캐시 갱신 |
-| 공지 | 관리자가 작성한 공지를 시간표 상단에 표시. Vercel KV에 저장 |
+| 공지 | 관리자가 작성한 공지를 시간표 상단에 표시. KV 스토어에 저장 |
 | 셀 병합 판별 | Google Sheets API의 mergedCells 정보를 사용하여 병합 범위 결정 |
 | 카테고리 색상 | 시트 셀 배경색(RGB)을 웹에 그대로 적용 (매핑 테이블 없음) |
 | 시트 구조 | 회차별 시트 탭 (시트명: "장기1기 - 2회차" 등). 각 탭은 동일한 구조 (헤더 + 주차별 시간×요일 그리드 반복). v1에서는 고정 구조 가정 |
@@ -78,9 +78,9 @@
 | 7 | 회차 네비게이션 | 회차 탭 전환 UI (시트 탭 수에 따라 동적) |
 | 8 | 폰트 색상 반영 | 셀 폰트 색상(foregroundColor)을 웹에 적용 — 공휴일 등 구분용 |
 | 9 | 모바일 반응형 | 시트와 동일한 테이블 레이아웃 + 가로 스크롤 (배포 후 뷰 확인하여 조정) |
-| 10 | PIN 접근 제어 | PIN 입력 페이지 + 미들웨어 검증 + 쿠키 저장 + Vercel KV 연동 |
+| 10 | PIN 접근 제어 | PIN 입력 페이지 + 미들웨어 검증 + 쿠키 저장 + KV 스토어 연동 |
 | 11 | 관리자 기능 | 관리자 인증 (환경변수) + PIN 변경 (KV) + 시간표 최신화 + 공지 작성 (KV) |
-| 12 | Vercel 배포 | 환경변수 설정 (ADMIN_PASSWORD, KV 연결), 배포 파이프라인 구성 |
+| 12 | Vercel 배포 | 환경변수 설정 (`ADMIN_PASSWORD`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`), 배포 파이프라인 구성 |
 
 ---
 
@@ -95,7 +95,7 @@
 | Styling | Tailwind CSS 4 |
 | Data Source | Google Sheets API v4 (read-only) |
 | Auth | 서비스 계정 (Service Account) — 서버 사이드 전용 |
-| KV Store | Vercel KV — PIN, 공지 저장 (무료 티어) |
+| KV Store | Upstash Redis (HTTP REST) — PIN, 공지 저장. `@upstash/redis` SDK로 접근. 본문 나머지는 "KV 스토어"로 추상화 (교체 가능성 고려). 무료 티어 10k req/day |
 | Deployment | Vercel |
 | Package Manager | npm |
 | Node.js | 20+ |
@@ -350,24 +350,27 @@ export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
 ```typescript
 // middleware.ts
 import { NextRequest, NextResponse } from "next/server"
+import { getStoredPin } from "@/lib/pin" // 내부에서 KV 스토어(Upstash Redis) 조회
 
 const PUBLIC_PATHS = ["/pin", "/api/auth/pin"]
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
   const pin = request.cookies.get("student_pin")?.value
-  const storedPin = await kv.get("student_pin") // Vercel KV에서 조회
-  if (pin !== storedPin) {
+  const storedPin = await getStoredPin()
+  if (!storedPin || pin !== storedPin) {
     return NextResponse.redirect(new URL("/pin", request.url))
   }
 
   return NextResponse.next()
 }
 ```
+
+`lib/pin.ts`는 KV 스토어 접근을 캡슐화한다 — 본문 코드는 `getStoredPin()`/`setStoredPin()`만 호출하고, 내부 구현(`@upstash/redis`)은 한 파일에 격리되어 나중에 다른 공급자로 교체하기 쉽다.
 
 ### 7.6 관리자 인증 + 기능
 
@@ -384,9 +387,9 @@ export async function POST(request: Request) {
 ```
 
 관리자 페이지(`/admin`)에서 제공하는 기능:
-- **PIN 변경**: `POST /api/pin` — 새 PIN 설정 → Vercel KV에 저장 (재배포 시에도 유지)
+- **PIN 변경**: `POST /api/pin` — 새 PIN 설정 → KV 스토어에 저장 (재배포 시에도 유지)
 - **시간표 최신화**: `POST /api/revalidate` — `revalidatePath("/")` 호출
-- **공지 작성**: `POST /api/notice` — Vercel KV에 저장, 시간표 상단에 표시
+- **공지 작성**: `POST /api/notice` — KV 스토어에 저장, 시간표 상단에 표시
 
 ### 7.7 On-demand Revalidation (관리자 전용)
 
