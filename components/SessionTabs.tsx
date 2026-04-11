@@ -87,7 +87,7 @@ function WeekGrid({ week }: { week: Week }) {
           </colgroup>
           <thead>
             <tr className="bg-zinc-100">
-              <th className="border border-zinc-200 px-2 py-2 text-center font-medium">시간</th>
+              <th className="sticky left-0 z-20 bg-zinc-100 border border-zinc-200 px-2 py-2 text-center font-medium">시간</th>
               {week.days.map((day) => (
                 <th key={day.date} className="border border-zinc-200 px-2 py-2 text-center font-medium">
                   <div>{day.date}</div>
@@ -99,7 +99,7 @@ function WeekGrid({ week }: { week: Week }) {
           <tbody>
             {timeSlots.map((_, timeIdx) => (
               <tr key={timeIdx}>
-                <td className="border border-zinc-200 px-2 py-2 text-center text-zinc-500 whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-white border border-zinc-200 px-2 py-2 text-center text-zinc-500 whitespace-nowrap">
                   {week.days[0]?.slots[timeIdx]?.startTime}~{week.days[0]?.slots[timeIdx]?.endTime}
                 </td>
                 {week.days.map((day) => {
