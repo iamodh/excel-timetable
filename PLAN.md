@@ -198,7 +198,7 @@
 
 **완료 조건:** PIN 미인증 사용자는 시간표 접근 불가, 인증 후 쿠키로 자동 인증, Upstash에서 PIN 변경 시 기존 세션 즉시 무효화
 
-- Commits:
+- Commits: b578757, dfae5f7, bfdcb34
 
 ---
 
