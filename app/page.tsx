@@ -3,6 +3,8 @@ import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { getNotice } from "@/lib/notice"
 
+export const revalidate = false
+
 export default async function TimetablePage() {
   const [sessions, notice] = await Promise.all([
     getAllTimetableData(),
