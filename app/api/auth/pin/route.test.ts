@@ -32,4 +32,24 @@ describe("POST /api/auth/pin", () => {
     expect(setCookie).toContain("Path=/")
     expect(setCookie).toContain("SameSite=Lax")
   })
+
+  it("PIN 불일치 시 401 응답 + 쿠키 미설정", async () => {
+    const { getStoredPin } = await import("@/lib/pin")
+    vi.mocked(getStoredPin).mockResolvedValue("1234")
+
+    const { POST } = await import("./route")
+
+    const request = new Request("http://localhost/api/auth/pin", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin: "wrong" }),
+    })
+
+    const response = await POST(request)
+
+    expect(response.status).toBe(401)
+    expect(response.headers.get("set-cookie")).toBeNull()
+    const body = await response.json()
+    expect(body.message).toBe("PIN이 올바르지 않습니다.")
+  })
 })
