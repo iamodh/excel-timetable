@@ -13,5 +13,5 @@ function getRedis(): Redis {
 
 export async function getStoredPin(): Promise<string | null> {
   const pin = await getRedis().get<string>(STUDENT_PIN_KEY)
-  return pin
+  return pin !== null ? String(pin) : null
 }
