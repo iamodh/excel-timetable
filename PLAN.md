@@ -178,7 +178,7 @@
 - [x] `lib/pin.ts` — `getStoredPin()` (Upstash에서 `student_pin` 키 조회)
 - [x] `app/api/auth/pin/route.ts` — POST 핸들러 (PIN 검증 + 쿠키 설정)
 - [x] `app/pin/page.tsx` — PIN 입력 페이지 (Client Component, form submit)
-- [ ] `middleware.ts` — 쿠키 검증 + 미인증 시 `/pin` 리다이렉트
+- [x] `proxy.ts` — 쿠키 검증 + 미인증 시 `/pin` 리다이렉트 (Next.js 16에서 middleware→proxy 전환)
 
 **Upstash 세팅 (수동 작업)**
 
@@ -198,7 +198,7 @@
 
 **완료 조건:** PIN 미인증 사용자는 시간표 접근 불가, 인증 후 쿠키로 자동 인증, Upstash에서 PIN 변경 시 기존 세션 즉시 무효화
 
-- Commits: b578757, dfae5f7, bfdcb34, 35688fa, 19f20a8
+- Commits: b578757, dfae5f7, bfdcb34, 35688fa, 19f20a8, 5e31d88
 
 ---
 
