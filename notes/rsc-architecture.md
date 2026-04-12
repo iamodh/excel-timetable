@@ -267,6 +267,41 @@ Next.js의 서버 컴포넌트와 Route Handler는 **BFF 역할을 그대로 수
 
 즉, **RSC는 "BFF를 컴포넌트 안에 내장한" 구조**라고 봐도 된다.
 
+---
+
+## 10. 서버 컴포넌트 vs Route Handler
+
+둘 다 서버에서 실행되지만 역할이 다르다.
+
+| | 서버 컴포넌트 (`page.tsx`) | Route Handler (`route.ts`) |
+|---|--------------------------|---------------------------|
+| 반환값 | JSX → HTML + RSC payload | `Response` 객체 (JSON 등) |
+| 역할 | 데이터 → UI 렌더링 | HTTP 요청 처리 (API 엔드포인트) |
+| MVC 비유 | View (+ Controller 일부) | Controller |
+| 호출 방식 | 브라우저가 URL 접속 | `fetch()`로 호출 |
+| 사용 시점 | 페이지 로드 시 데이터를 바로 화면에 표시 | 사용자 인터랙션 후 서버와 통신 (폼 제출, 버튼 클릭) |
+
+### 같은 경로에 공존 불가
+
+`page.tsx`와 `route.ts`는 같은 디렉토리에 둘 수 없다. Next.js가 같은 URL에 대해 "UI를 렌더링할지, API 응답을 반환할지" 결정할 수 없기 때문.
+
+```
+app/pin/page.tsx       → GET /pin → PIN 입력 UI
+app/api/auth/pin/route.ts → POST /api/auth/pin → PIN 검증 API
+```
+
+### 이 프로젝트에 대입
+
+| 경로 | 파일 | 타입 | 하는 일 |
+|------|------|------|---------|
+| `/` | `app/page.tsx` | 서버 컴포넌트 | Sheets API → 시간표 렌더링 |
+| `/pin` | `app/pin/page.tsx` | 클라이언트 컴포넌트 | PIN 입력 폼 UI |
+| `/api/auth/pin` | `app/api/auth/pin/route.ts` | Route Handler | PIN 검증 → 쿠키 설정 |
+
+PIN 입력 페이지(`/pin`)에서 폼 제출 → Route Handler(`/api/auth/pin`)로 fetch → 인증 성공 시 시간표 페이지(`/`)로 이동. UI와 API가 분리된 구조.
+
+---
+
 ### 이 프로젝트에 대입
 
 - 클라이언트: 웹 하나
