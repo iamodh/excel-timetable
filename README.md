@@ -61,6 +61,7 @@ npm test         # Vitest 테스트
 - [Next.js 렌더링 방식과 CDN](notes/nextjs-rendering-and-cdn.md)
 - [캐싱 전략 (On-demand Revalidation)](notes/caching-strategy.md)
 - [revalidate 설정과 미들웨어](notes/revalidate-and-middleware.md)
+- [미들웨어 캐싱 이슈 (AS-IS/TO-BE)](notes/middleware-caching-issue.md)
 - [쿠키 인증](notes/cookies.md)
 - [Google Sheets 인증](notes/google-sheets-auth.md)
 - [Redis / Upstash / Supabase 비교](notes/redis-upstash-supabase.md)
