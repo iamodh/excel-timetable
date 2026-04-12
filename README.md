@@ -52,3 +52,15 @@ npm run build    # 프로덕션 빌드
 npm run lint     # ESLint + TypeScript 타입 체크
 npm test         # Vitest 테스트
 ```
+
+## 학습 노트
+
+프로젝트를 진행하며 정리한 기술 노트들입니다.
+
+- [RSC 아키텍처](notes/rsc-architecture.md)
+- [Next.js 렌더링 방식과 CDN](notes/nextjs-rendering-and-cdn.md)
+- [캐싱 전략 (On-demand Revalidation)](notes/caching-strategy.md)
+- [revalidate 설정과 미들웨어](notes/revalidate-and-middleware.md)
+- [쿠키 인증](notes/cookies.md)
+- [Google Sheets 인증](notes/google-sheets-auth.md)
+- [Redis / Upstash / Supabase 비교](notes/redis-upstash-supabase.md)
