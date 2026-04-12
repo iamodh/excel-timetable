@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 
 export default function AdminDashboard({ currentNotice }: { currentNotice: string | null }) {
   return (
@@ -12,6 +13,11 @@ export default function AdminDashboard({ currentNotice }: { currentNotice: strin
         <PinChangeSection />
         <RevalidateSection />
         <NoticeSection currentNotice={currentNotice} />
+        <div className="text-center">
+          <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-600">
+            시간표 보기
+          </Link>
+        </div>
       </div>
     </div>
   )

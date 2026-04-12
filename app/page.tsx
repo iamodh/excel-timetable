@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { getNotice } from "@/lib/notice"
@@ -16,6 +17,11 @@ export default async function TimetablePage() {
         </div>
       )}
       <SessionTabs sessions={sessions} />
+      <div className="max-w-4xl mx-auto mt-6 text-center">
+        <Link href="/guide" className="text-sm text-zinc-400 hover:text-zinc-600">
+          가이드
+        </Link>
+      </div>
     </div>
   )
 }
