@@ -185,7 +185,7 @@
 - [x] Vercel 대시보드 → Storage → KV 생성 (리전: Washington DC)
 - [x] `.env.local`에 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 추가
 - [x] curl로 초기 PIN 설정: `SET student_pin 1234`
-- [ ] Vercel 프로젝트 환경변수에도 동일한 두 값 주입 (배포 환경용)
+- [x] Vercel 프로젝트 환경변수에도 동일한 두 값 주입 (배포 환경용)
 
 **Manual Tests**
 
