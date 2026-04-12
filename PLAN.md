@@ -180,21 +180,20 @@
 - [x] `app/pin/page.tsx` — PIN 입력 페이지 (Client Component, form submit)
 - [x] `proxy.ts` — 쿠키 검증 + 미인증 시 `/pin` 리다이렉트 (Next.js 16에서 middleware→proxy 전환)
 
-**Upstash 세팅 (수동 작업)**
+**KV 세팅 (수동 작업 — Vercel KV로 대체)**
 
-- [ ] https://console.upstash.com 가입 (GitHub/Google OAuth)
-- [ ] Create Database — 이름 `kimhae-timetable-dev`, 리전 `ap-northeast-1` (도쿄), Free plan
-- [ ] `.env.local`에 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 추가
-- [ ] Upstash 콘솔 Data Browser에서 초기 PIN 설정: `SET student_pin 1234`
+- [x] Vercel 대시보드 → Storage → KV 생성 (리전: Washington DC)
+- [x] `.env.local`에 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 추가
+- [x] curl로 초기 PIN 설정: `SET student_pin 1234`
 - [ ] Vercel 프로젝트 환경변수에도 동일한 두 값 주입 (배포 환경용)
 
 **Manual Tests**
 
-- [ ] 쿠키 없이 `/` 접속 → `/pin`으로 리다이렉트
-- [ ] 올바른 PIN 입력 → 시간표 페이지로 이동 + `student_pin` 쿠키 생성 확인 (DevTools Application 탭)
-- [ ] 잘못된 PIN 입력 → "PIN이 올바르지 않습니다." 에러 메시지 표시
-- [ ] PIN 인증 후 재접속 시 PIN 재입력 불필요 (쿠키 자동 전송)
-- [ ] Upstash 콘솔에서 PIN 변경 후 기존 쿠키로 접근 → `/pin` 리다이렉트 (진실원 분리 검증)
+- [x] 쿠키 없이 `/` 접속 → `/pin`으로 리다이렉트
+- [x] 올바른 PIN 입력 → 시간표 페이지로 이동 + `student_pin` 쿠키 생성 확인 (DevTools Application 탭)
+- [x] 잘못된 PIN 입력 → "PIN이 올바르지 않습니다." 에러 메시지 표시
+- [x] PIN 인증 후 재접속 시 PIN 재입력 불필요 (쿠키 자동 전송)
+- [x] Upstash 콘솔에서 PIN 변경 후 기존 쿠키로 접근 → `/pin` 리다이렉트 (진실원 분리 검증)
 
 **완료 조건:** PIN 미인증 사용자는 시간표 접근 불가, 인증 후 쿠키로 자동 인증, Upstash에서 PIN 변경 시 기존 세션 즉시 무효화
 
