@@ -57,11 +57,27 @@ npm test         # Vitest 테스트
 
 프로젝트를 진행하며 정리한 기술 노트들입니다.
 
-- [RSC 아키텍처](notes/rsc-architecture.md)
-- [Next.js 렌더링 방식과 CDN](notes/nextjs-rendering-and-cdn.md)
-- [캐싱 전략 (On-demand Revalidation)](notes/caching-strategy.md)
-- [revalidate 설정과 미들웨어](notes/revalidate-and-middleware.md)
-- [미들웨어 캐싱 이슈 (AS-IS/TO-BE)](notes/middleware-caching-issue.md)
-- [쿠키 인증](notes/cookies.md)
-- [Google Sheets 인증](notes/google-sheets-auth.md)
-- [Redis / Upstash / Supabase 비교](notes/redis-upstash-supabase.md)
+### 개념 학습
+
+프레임워크와 웹 기본기를 정리한 문서.
+
+- [RSC 아키텍처](notes/learning/rsc-architecture.md)
+- [Next.js 렌더링 방식과 CDN](notes/learning/nextjs-rendering-and-cdn.md)
+- [App Router 파일 컨벤션](notes/learning/app-router-conventions.md)
+- [revalidate 설정과 미들웨어](notes/learning/revalidate-and-middleware.md)
+- [쿠키 인증](notes/learning/cookies.md)
+
+### 문제 해결 과정
+
+이 프로젝트에서 부딪힌 문제와 의사결정 기록.
+
+- [캐싱 전략 (On-demand Revalidation)](notes/problem-solving/caching-strategy.md) — 여러 방식 검토 후 선택
+- [미들웨어 캐싱 이슈 (AS-IS/TO-BE)](notes/problem-solving/middleware-caching-issue.md) — proxy가 정적 캐싱을 무효화한 문제
+- [proxy 캐싱 해결 패턴 A/B/C](notes/problem-solving/proxy-caching-patterns.md) — 세 패턴 비교와 추천
+
+### 기술 사용법
+
+외부 서비스 연동 방법.
+
+- [Google Sheets 인증](notes/how-to/google-sheets-auth.md)
+- [Redis / Upstash / Supabase 비교](notes/how-to/redis-upstash-supabase.md)
