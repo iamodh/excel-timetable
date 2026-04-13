@@ -74,6 +74,7 @@ npm test         # Vitest 테스트
 - [캐싱 전략 (On-demand Revalidation)](notes/problem-solving/caching-strategy.md) — 여러 방식 검토 후 선택
 - [미들웨어 캐싱 이슈 (AS-IS/TO-BE)](notes/problem-solving/middleware-caching-issue.md) — proxy가 정적 캐싱을 무효화한 문제
 - [proxy 캐싱 해결 패턴 A/B/C](notes/problem-solving/proxy-caching-patterns.md) — 세 패턴 비교와 추천
+- [`"use cache"` / `cacheTag` / `revalidateTag`](notes/problem-solving/use-cache-and-tags.md) — Next.js 16 Cache Components 모델과 `"max"` 프로파일
 
 ### 기술 사용법
 
