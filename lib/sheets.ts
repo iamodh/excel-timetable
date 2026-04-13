@@ -1,4 +1,5 @@
 import { google } from "googleapis"
+import { cacheTag } from "next/cache"
 import { parseTimetable, type TimetableData } from "./parser"
 
 export async function fetchTimetableData() {
@@ -33,6 +34,8 @@ export async function getTimetableData(): Promise<TimetableData> {
 }
 
 export async function getAllTimetableData(): Promise<TimetableData[]> {
+  "use cache"
+  cacheTag("timetable")
   const spreadsheet = await fetchTimetableData()
   const sheetTabs = spreadsheet.sheets ?? []
 

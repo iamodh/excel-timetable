@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
+vi.mock("next/cache", () => ({
+  revalidateTag: vi.fn(),
+}))
+
 vi.mock("@/lib/admin-auth", () => ({
   verifyAdminToken: vi.fn(),
 }))

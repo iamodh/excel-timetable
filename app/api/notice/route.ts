@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache"
 import { verifyAdminToken } from "@/lib/admin-auth"
 import { setNotice, deleteNotice } from "@/lib/notice"
 
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   }
 
   await setNotice(message)
+  revalidateTag("notice", "max")
 
   return Response.json({ message: "공지가 등록되었습니다." })
 }
@@ -33,6 +35,7 @@ export async function DELETE(request: Request) {
   }
 
   await deleteNotice()
+  revalidateTag("notice", "max")
 
   return Response.json({ message: "공지가 삭제되었습니다." })
 }

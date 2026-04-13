@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache"
+import { revalidateTag } from "next/cache"
 import { verifyAdminToken } from "@/lib/admin-auth"
 
 export async function POST(request: Request) {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     )
   }
 
-  revalidatePath("/")
+  revalidateTag("timetable", "max")
 
   return Response.json({ message: "시간표가 최신화되었습니다." })
 }
