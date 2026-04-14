@@ -71,9 +71,13 @@ export default function GuidePage() {
           </dl>
         </section>
 
-        <div className="text-center pt-4">
-          <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-600">
-            시간표로 돌아가기
+        <div className="text-center pb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 py-2 text-sm text-zinc-600 hover:text-zinc-900"
+          >
+            <span>🏠</span>
+            <span>시간표로 돌아가기</span>
           </Link>
         </div>
       </div>

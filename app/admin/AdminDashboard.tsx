@@ -13,9 +13,13 @@ export default function AdminDashboard({ currentNotice }: { currentNotice: strin
         <PinChangeSection />
         <RevalidateSection />
         <NoticeSection currentNotice={currentNotice} />
-        <div className="text-center">
-          <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-600">
-            시간표 보기
+        <div className="text-center pb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 py-2 text-sm text-zinc-600 hover:text-zinc-900"
+          >
+            <span>🏠</span>
+            <span>시간표 보기</span>
           </Link>
         </div>
       </div>
