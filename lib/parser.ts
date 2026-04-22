@@ -172,6 +172,34 @@ export interface TimetableData {
   weeks: Week[]
 }
 
+const BLOCK_WIDTH = 6
+const BLOCK_STRIDE = BLOCK_WIDTH + 1 // 6열 + 구분 열 1개
+
+export function parseSessionBlocks(rowData: RowData[], merges: MergeRange[]): TimetableData[] {
+  const sessions: TimetableData[] = []
+  for (let b = 0; ; b++) {
+    const startCol = b * BLOCK_STRIDE
+    const endCol = startCol + BLOCK_WIDTH
+
+    const programName = rowData[2]?.values?.[startCol]?.formattedValue ?? ""
+    if (!programName) break
+
+    const blockRows: RowData[] = rowData.map((row) => ({
+      values: (row.values ?? []).slice(startCol, endCol),
+    }))
+    const blockMerges = merges
+      .filter((m) => m.startColumnIndex >= startCol && m.endColumnIndex <= endCol)
+      .map((m) => ({
+        ...m,
+        startColumnIndex: m.startColumnIndex - startCol,
+        endColumnIndex: m.endColumnIndex - startCol,
+      }))
+
+    sessions.push(parseTimetable(blockRows, blockMerges))
+  }
+  return sessions
+}
+
 export function parseTimetable(rowData: RowData[], merges: MergeRange[]): TimetableData {
   const categories = parseCategories(rowData.slice(0, 2))
   const header = parseHeader(rowData.slice(2, 4))

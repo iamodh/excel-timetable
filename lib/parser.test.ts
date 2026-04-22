@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { applyMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable } from "./parser"
+import { applyMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks } from "./parser"
 
 describe("parseCategories", () => {
   it("범례 행에서 카테고리명과 배경색을 추출한다", () => {
@@ -199,6 +199,63 @@ describe("parseGridSlots", () => {
     expect(slots[1][1].bgColor).toBe("#f5a661")
     expect(slots[1][1].startTime).toBe("10:00")
     expect(slots[1][1].endTime).toBe("11:00")
+  })
+})
+
+describe("parseSessionBlocks", () => {
+  it("가로로 나열된 2개 블록을 독립된 회차로 분리한다", () => {
+    // 블록 한 개는 6열 + 구분 열 1개 = 7열 stride
+    const empty6 = [{}, {}, {}, {}, {}, {}]
+    const joinRow = (b1: object[], b2: object[]) => ({ values: [...b1, {}, ...b2] })
+    const timeSlotRow = (label: string) => [
+      { formattedValue: label }, {}, {}, {}, {}, {},
+    ]
+
+    const rowData = [
+      // 행0~1: 범례 (첫 블록 영역에만)
+      joinRow(
+        [{ formattedValue: "밀착상담", effectiveFormat: { backgroundColor: { red: 0.85, green: 0.92, blue: 0.83 } } }, {}, {}, {}, {}, {}],
+        empty6
+      ),
+      joinRow(empty6, empty6),
+      // 행2: 블록별 프로그램명 / 기간 / 장소
+      joinRow(
+        [
+          { formattedValue: "1회차" }, {},
+          { formattedValue: "2026.04.07 ~ 2026.05.11" }, {},
+          { formattedValue: "교육장소 : 장유" }, {},
+        ],
+        [
+          { formattedValue: "2회차" }, {},
+          { formattedValue: "2026.05.12 ~ 2026.06.15" }, {},
+          { formattedValue: "교육장소 : 진영" }, {},
+        ]
+      ),
+      // 행3: 이수시간
+      joinRow(
+        [{ formattedValue: "40h" }, {}, {}, {}, {}, {}],
+        [{ formattedValue: "40h" }, {}, {}, {}, {}, {}]
+      ),
+      // 행4: 주차 헤더
+      joinRow(
+        [{ formattedValue: "1주차" }, { formattedValue: "4/7(Tue)" }, {}, {}, {}, {}],
+        [{ formattedValue: "1주차" }, { formattedValue: "5/12(Tue)" }, {}, {}, {}, {}]
+      ),
+      // 행5~12: 시간슬롯 8행
+      ...Array.from({ length: 8 }, (_, i) =>
+        joinRow(timeSlotRow(`${9 + i}:00~${10 + i}:00`), timeSlotRow(`${9 + i}:00~${10 + i}:00`))
+      ),
+    ]
+
+    const sessions = parseSessionBlocks(rowData, [])
+
+    expect(sessions).toHaveLength(2)
+    expect(sessions[0].programName).toBe("1회차")
+    expect(sessions[0].period).toBe("2026.04.07 ~ 2026.05.11")
+    expect(sessions[0].location).toBe("장유")
+    expect(sessions[1].programName).toBe("2회차")
+    expect(sessions[1].period).toBe("2026.05.12 ~ 2026.06.15")
+    expect(sessions[1].location).toBe("진영")
   })
 })
 
