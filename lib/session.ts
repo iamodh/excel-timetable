@@ -20,6 +20,20 @@ function getSessionRange(session: TimetableData, year: number): { start: Date; e
   return { start: allDates[0], end: allDates[allDates.length - 1] }
 }
 
+function parsePeriodStart(period: string): Date | null {
+  const match = period.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/)
+  if (!match) return null
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+}
+
+export function filterVisibleSessions(sessions: TimetableData[], today: Date): TimetableData[] {
+  return sessions.filter((s) => {
+    const start = parsePeriodStart(s.period)
+    if (!start) return true
+    return start.getTime() <= today.getTime()
+  })
+}
+
 export function determineCurrentSession(sessions: TimetableData[]): number {
   const today = new Date()
   const year = today.getFullYear()

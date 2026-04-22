@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { determineCurrentSession } from "./session"
+import { determineCurrentSession, filterVisibleSessions } from "./session"
 import type { TimetableData } from "./parser"
 
 function makeSession(dates: string[]): TimetableData {
@@ -66,5 +66,31 @@ describe("determineCurrentSession", () => {
 
   it("빈 sessions 배열이면 0을 반환한다", () => {
     expect(determineCurrentSession([])).toBe(0)
+  })
+})
+
+describe("filterVisibleSessions", () => {
+  function makeSessionWithPeriod(period: string, programName: string): TimetableData {
+    return {
+      programName,
+      period,
+      location: "",
+      totalHours: "",
+      categories: [],
+      weeks: [],
+    }
+  }
+
+  it("오늘 기준 period 시작일이 미래인 회차는 제외하고 과거·현재 회차만 남긴다", () => {
+    const sessions = [
+      makeSessionWithPeriod("2026.01.05 ~ 2026.02.08", "1회차"), // 과거
+      makeSessionWithPeriod("2026.04.07 ~ 2026.05.11", "2회차"), // 시작됨 (현재)
+      makeSessionWithPeriod("2026.05.12 ~ 2026.06.15", "3회차"), // 미래
+    ]
+    const today = new Date(2026, 3, 22) // 2026-04-22
+
+    const visible = filterVisibleSessions(sessions, today)
+
+    expect(visible.map((s) => s.programName)).toEqual(["1회차", "2회차"])
   })
 })
