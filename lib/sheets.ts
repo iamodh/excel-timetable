@@ -1,4 +1,4 @@
-import { google } from "googleapis"
+import { google, type sheets_v4 } from "googleapis"
 import { cacheTag } from "next/cache"
 import { parseTimetable, type TimetableData } from "./parser"
 
@@ -33,20 +33,19 @@ export async function getTimetableData(): Promise<TimetableData> {
   return sessions[0]
 }
 
+export function extractFirstTabSessions(
+  spreadsheet: sheets_v4.Schema$Spreadsheet,
+): TimetableData[] {
+  const firstTab = spreadsheet.sheets?.[0]
+  if (!firstTab) return []
+  const rowData = (firstTab.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
+  const merges = (firstTab.merges ?? []) as Parameters<typeof parseTimetable>[1]
+  return [parseTimetable(rowData, merges)]
+}
+
 export async function getAllTimetableData(): Promise<TimetableData[]> {
   "use cache"
   cacheTag("timetable")
   const spreadsheet = await fetchTimetableData()
-  const sheetTabs = spreadsheet.sheets ?? []
-
-  return sheetTabs.map((sheet) => {
-    const rowData = (sheet.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
-    const merges = (sheet.merges ?? []) as {
-      startRowIndex: number
-      endRowIndex: number
-      startColumnIndex: number
-      endColumnIndex: number
-    }[]
-    return parseTimetable(rowData, merges)
-  })
+  return extractFirstTabSessions(spreadsheet)
 }

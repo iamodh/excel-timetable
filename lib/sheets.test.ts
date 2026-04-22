@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { extractFirstTabSessions } from "./sheets"
 
 describe("fetchTimetableData", () => {
   beforeEach(() => {
@@ -26,5 +27,59 @@ describe("fetchTimetableData", () => {
     await expect(fetchTimetableData()).rejects.toThrow(
       "GOOGLE_SHEET_ID 환경변수가 설정되지 않았습니다."
     )
+  })
+})
+
+describe("extractFirstTabSessions", () => {
+  it("여러 탭이 포함된 응답에서 첫 번째 탭만 파싱한다", () => {
+    const spreadsheet = {
+      sheets: [
+        {
+          properties: { title: "현재학기" },
+          data: [{
+            rowData: [
+              { values: [{}, {}] }, { values: [{}, {}] },
+              {
+                values: [
+                  { formattedValue: "현재-1회차" }, {},
+                  { formattedValue: "2026.04.07 ~ 2026.05.11" }, {},
+                  { formattedValue: "교육장소 : 장유" }, {},
+                ],
+              },
+              { values: [{ formattedValue: "40h" }, {}, {}, {}, {}, {}] },
+            ],
+          }],
+          merges: [],
+        },
+        {
+          properties: { title: "과거학기" },
+          data: [{
+            rowData: [
+              { values: [{}, {}] }, { values: [{}, {}] },
+              {
+                values: [
+                  { formattedValue: "과거-1회차" }, {},
+                  { formattedValue: "2025.09.01 ~ 2025.12.31" }, {},
+                  { formattedValue: "교육장소 : 진영" }, {},
+                ],
+              },
+              { values: [{ formattedValue: "32h" }, {}, {}, {}, {}, {}] },
+            ],
+          }],
+          merges: [],
+        },
+      ],
+    }
+
+    const sessions = extractFirstTabSessions(spreadsheet)
+
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].programName).toBe("현재-1회차")
+    expect(sessions[0].location).toBe("장유")
+  })
+
+  it("탭이 없는 응답은 빈 배열을 반환한다", () => {
+    expect(extractFirstTabSessions({ sheets: [] })).toEqual([])
+    expect(extractFirstTabSessions({})).toEqual([])
   })
 })
