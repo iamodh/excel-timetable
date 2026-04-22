@@ -234,7 +234,7 @@ describe("parseSessionBlocks", () => {
       // 행3: 이수시간
       joinRow(
         [{ formattedValue: "40h" }, {}, {}, {}, {}, {}],
-        [{ formattedValue: "40h" }, {}, {}, {}, {}, {}]
+        [{ formattedValue: "32h" }, {}, {}, {}, {}, {}]
       ),
       // 행4: 주차 헤더
       joinRow(
@@ -253,9 +253,11 @@ describe("parseSessionBlocks", () => {
     expect(sessions[0].programName).toBe("1회차")
     expect(sessions[0].period).toBe("2026.04.07 ~ 2026.05.11")
     expect(sessions[0].location).toBe("장유")
+    expect(sessions[0].totalHours).toBe("40h")
     expect(sessions[1].programName).toBe("2회차")
     expect(sessions[1].period).toBe("2026.05.12 ~ 2026.06.15")
     expect(sessions[1].location).toBe("진영")
+    expect(sessions[1].totalHours).toBe("32h")
   })
 })
 
