@@ -69,6 +69,8 @@ npm test         # Vitest 테스트
 
 - [RSC 아키텍처](notes/learning/rsc-architecture.md)
 - [Next.js 렌더링 방식과 CDN](notes/learning/nextjs-rendering-and-cdn.md)
+- [Prerender와 동적 렌더링](notes/learning/prerender-and-dynamic-rendering.md) — 렌더링 시점을 가르는 축
+- [쉘과 홀](notes/learning/shell-and-hole.md) — cacheComponents의 Partial Prerender 모델
 - [App Router 파일 컨벤션](notes/learning/app-router-conventions.md)
 - [revalidate 설정과 미들웨어](notes/learning/revalidate-and-middleware.md)
 - [쿠키 인증](notes/learning/cookies.md)
@@ -81,6 +83,7 @@ npm test         # Vitest 테스트
 - [미들웨어 캐싱 이슈 (AS-IS/TO-BE)](notes/problem-solving/middleware-caching-issue.md) — proxy가 정적 캐싱을 무효화한 문제
 - [proxy 캐싱 해결 패턴 A/B/C](notes/problem-solving/proxy-caching-patterns.md) — 세 패턴 비교와 추천
 - [`"use cache"` / `cacheTag` / `revalidateTag`](notes/problem-solving/use-cache-and-tags.md) — Next.js 16 Cache Components 모델과 `"max"` 프로파일
+- [`new Date()` + cacheComponents 2단계 에러](notes/problem-solving/dynamic-date-with-cache-components.md) — 동적 값을 쉘에 두면 생기는 일과 Suspense 격리
 
 ### 기술 사용법
 
