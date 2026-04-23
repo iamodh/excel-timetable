@@ -109,11 +109,11 @@ describe("parseWeekHeader", () => {
     const row = {
       values: [
         { formattedValue: "1주차" },
-        { formattedValue: "4/7(Tue)" },
-        { formattedValue: "4/8(Wed)" },
-        { formattedValue: "4/9(Thu)" },
-        { formattedValue: "4/10(Fri)" },
-        { formattedValue: "4/13(Mon)" },
+        { formattedValue: "4/7(화)" },
+        { formattedValue: "4/8(수)" },
+        { formattedValue: "4/9(목)" },
+        { formattedValue: "4/10(금)" },
+        { formattedValue: "4/13(월)" },
       ],
     }
 
@@ -121,11 +121,11 @@ describe("parseWeekHeader", () => {
 
     expect(header.weekNumber).toBe(1)
     expect(header.days).toEqual([
-      { date: "4/7", dayOfWeek: "Tue" },
-      { date: "4/8", dayOfWeek: "Wed" },
-      { date: "4/9", dayOfWeek: "Thu" },
-      { date: "4/10", dayOfWeek: "Fri" },
-      { date: "4/13", dayOfWeek: "Mon" },
+      { date: "4/7", dayOfWeek: "화" },
+      { date: "4/8", dayOfWeek: "수" },
+      { date: "4/9", dayOfWeek: "목" },
+      { date: "4/10", dayOfWeek: "금" },
+      { date: "4/13", dayOfWeek: "월" },
     ])
   })
 })

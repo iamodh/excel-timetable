@@ -77,7 +77,7 @@ export function parseWeekHeader(row: RowData): WeekHeader {
   for (let i = 1; i < cells.length; i++) {
     const val = cells[i]?.formattedValue ?? ""
     if (!val) continue
-    const match = val.match(/^(.+)\((\w+)\)$/)
+    const match = val.match(/^(.+)\(([^)]+)\)$/)
     if (match) {
       days.push({ date: match[1], dayOfWeek: match[2] })
     }
