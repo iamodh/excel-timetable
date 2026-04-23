@@ -1,6 +1,6 @@
 import { google, type sheets_v4 } from "googleapis"
 import { cacheTag } from "next/cache"
-import { parseTimetable, type TimetableData } from "./parser"
+import { parseSessionBlocks, type TimetableData } from "./parser"
 
 export async function fetchTimetableData() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
@@ -38,9 +38,9 @@ export function extractFirstTabSessions(
 ): TimetableData[] {
   const firstTab = spreadsheet.sheets?.[0]
   if (!firstTab) return []
-  const rowData = (firstTab.data?.[0]?.rowData ?? []) as Parameters<typeof parseTimetable>[0]
-  const merges = (firstTab.merges ?? []) as Parameters<typeof parseTimetable>[1]
-  return [parseTimetable(rowData, merges)]
+  const rowData = (firstTab.data?.[0]?.rowData ?? []) as Parameters<typeof parseSessionBlocks>[0]
+  const merges = (firstTab.merges ?? []) as Parameters<typeof parseSessionBlocks>[1]
+  return parseSessionBlocks(rowData, merges)
 }
 
 export async function getAllTimetableData(): Promise<TimetableData[]> {
