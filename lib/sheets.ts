@@ -38,8 +38,24 @@ export function extractFirstTabSessions(
 ): TimetableData[] {
   const firstTab = spreadsheet.sheets?.[0]
   if (!firstTab) return []
-  const rowData = (firstTab.data?.[0]?.rowData ?? []) as Parameters<typeof parseSessionBlocks>[0]
-  const merges = (firstTab.merges ?? []) as Parameters<typeof parseSessionBlocks>[1]
+  const allRows = (firstTab.data?.[0]?.rowData ?? []) as Parameters<typeof parseSessionBlocks>[0]
+  const allMerges = (firstTab.merges ?? []) as Parameters<typeof parseSessionBlocks>[1]
+
+  // 매니저 시트는 첫 행 + 첫 열을 빈 패딩으로 둔다 — 파싱 전에 떼어내고 merges 인덱스도 보정한다
+  const rowData = allRows.slice(1).map((row) => ({
+    ...row,
+    values: (row.values ?? []).slice(1),
+  }))
+  const merges = allMerges
+    .filter((m) => m.startRowIndex >= 1 && m.startColumnIndex >= 1)
+    .map((m) => ({
+      ...m,
+      startRowIndex: m.startRowIndex - 1,
+      endRowIndex: m.endRowIndex - 1,
+      startColumnIndex: m.startColumnIndex - 1,
+      endColumnIndex: m.endColumnIndex - 1,
+    }))
+
   return parseSessionBlocks(rowData, merges)
 }
 

@@ -31,22 +31,24 @@ describe("fetchTimetableData", () => {
 })
 
 describe("extractFirstTabSessions", () => {
-  it("여러 탭이 포함된 응답에서 첫 번째 탭만 파싱한다", () => {
+  it("첫 행+첫 열 빈 패딩이 있는 시트에서 두 번째 행/열부터 파싱하며, 여러 탭 중 첫 번째 탭만 사용한다", () => {
     const spreadsheet = {
       sheets: [
         {
           properties: { title: "현재학기" },
           data: [{
             rowData: [
-              { values: [{}, {}] }, { values: [{}, {}] },
+              { values: [] }, // 빈 첫 행
+              { values: [{}, {}, {}] }, { values: [{}, {}, {}] },
               {
                 values: [
+                  {}, // 빈 첫 열
                   { formattedValue: "현재-1회차" }, {},
                   { formattedValue: "2026.04.07 ~ 2026.05.11" }, {},
                   { formattedValue: "교육장소 : 장유" }, {},
                 ],
               },
-              { values: [{ formattedValue: "40h" }, {}, {}, {}, {}, {}] },
+              { values: [{}, { formattedValue: "40h" }, {}, {}, {}, {}, {}] },
             ],
           }],
           merges: [],
@@ -55,15 +57,17 @@ describe("extractFirstTabSessions", () => {
           properties: { title: "과거학기" },
           data: [{
             rowData: [
-              { values: [{}, {}] }, { values: [{}, {}] },
+              { values: [] },
+              { values: [{}, {}, {}] }, { values: [{}, {}, {}] },
               {
                 values: [
+                  {},
                   { formattedValue: "과거-1회차" }, {},
                   { formattedValue: "2025.09.01 ~ 2025.12.31" }, {},
                   { formattedValue: "교육장소 : 진영" }, {},
                 ],
               },
-              { values: [{ formattedValue: "32h" }, {}, {}, {}, {}, {}] },
+              { values: [{}, { formattedValue: "32h" }, {}, {}, {}, {}, {}] },
             ],
           }],
           merges: [],
