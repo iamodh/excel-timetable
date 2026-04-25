@@ -149,6 +149,31 @@ export function applyMerges(slots: MergeableSlot[][], merges: MergeRange[]): voi
   }
 }
 
+interface ColorMergeableSlot extends MergeableSlot {
+  title: string
+  bgColor: string
+}
+
+// 매니저가 세로 병합을 빠뜨리고 색만 칠한 셀을 위 셀의 연속으로 보정한다.
+// 빈 텍스트 + 위 셀과 같은 배경색 두 조건을 모두 만족할 때만 병합으로 추정.
+export function applyImplicitMerges(slots: ColorMergeableSlot[][]): void {
+  if (slots.length === 0) return
+  const cols = slots[0].length
+  for (let c = 0; c < cols; c++) {
+    for (let r = 1; r < slots.length; r++) {
+      const cur = slots[r][c]
+      if (cur.isMergedContinuation || cur.title) continue
+      let topR = r - 1
+      while (topR > 0 && slots[topR][c].isMergedContinuation) topR--
+      const top = slots[topR][c]
+      if (!top.title) continue
+      if (!cur.bgColor || cur.bgColor !== top.bgColor) continue
+      top.rowSpan = (r - topR) + cur.rowSpan
+      cur.isMergedContinuation = true
+    }
+  }
+}
+
 const GRID_START = 4
 const WEEK_ROWS = 9
 
@@ -226,6 +251,7 @@ export function parseTimetable(rowData: RowData[], merges: MergeRange[]): Timeta
         endColumnIndex: m.endColumnIndex - 1,
       }))
     applyMerges(grid, gridMerges)
+    applyImplicitMerges(grid)
 
     const days: Day[] = weekHeader.days.map((dh, colIdx) => ({
       dayOfWeek: dh.dayOfWeek,

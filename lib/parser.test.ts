@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { applyMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks } from "./parser"
+import { applyMerges, applyImplicitMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks } from "./parser"
 
 describe("parseCategories", () => {
   it("범례 행에서 카테고리명과 배경색을 추출한다", () => {
@@ -71,6 +71,48 @@ describe("applyMerges", () => {
     expect(slots[0][0].isMergedContinuation).toBe(false)
     expect(slots[3][0].rowSpan).toBe(1)
     expect(slots[3][0].isMergedContinuation).toBe(false)
+  })
+})
+
+describe("applyImplicitMerges", () => {
+  it("빈 텍스트 + 위 셀과 같은 배경색일 때만 가상 merge로 처리한다", () => {
+    const make = (props: Partial<{ title: string; bgColor: string; rowSpan: number; isMergedContinuation: boolean }>) => ({
+      title: "",
+      bgColor: "",
+      rowSpan: 1,
+      isMergedContinuation: false,
+      ...props,
+    })
+
+    // 한 열에 여러 케이스를 위에서 아래로 배치
+    const slots = [
+      [make({ title: "명상", bgColor: "#800080" })],                              // 0: 시작
+      [make({ bgColor: "#800080" })],                                              // 1: 같은 색 + 빈 텍스트 → 병합
+      [make({ title: "회의", bgColor: "#0000ff" })],                               // 2: 새 시작
+      [make({ bgColor: "#ff0000" })],                                              // 3: 다른 색 → 병합 안 됨
+      [make({ title: "수업", bgColor: "#0000ff" })],                               // 4: 같은 색이지만 텍스트 있음 → 새 시작
+      [make({ bgColor: "#ffffff" })],                                              // 5: 빈 슬롯(흰색)
+      [make({ bgColor: "#ffffff" })],                                              // 6: 빈 슬롯(흰색) — 위가 수업 아니므로 병합 안 됨
+      [make({ title: "창업", bgColor: "#ffaa00" })],                               // 7: 새 시작 (1시간)
+      [make({ bgColor: "#ffaa00", rowSpan: 3 })],                                  // 8: 명시적 merge 시작, 빈 텍스트, 같은 색 → 3시간만큼 흡수
+      [make({ bgColor: "#ffaa00", isMergedContinuation: true })],                  // 9: 명시적 continuation
+      [make({ bgColor: "#ffaa00", isMergedContinuation: true })],                  // 10: 명시적 continuation
+    ]
+
+    applyImplicitMerges(slots)
+
+    // 0~1 가상 merge
+    expect(slots[0][0].rowSpan).toBe(2)
+    expect(slots[1][0].isMergedContinuation).toBe(true)
+    // 2~6은 병합되지 않음
+    expect(slots[2][0].rowSpan).toBe(1)
+    expect(slots[3][0].isMergedContinuation).toBe(false)
+    expect(slots[4][0].rowSpan).toBe(1)
+    expect(slots[5][0].isMergedContinuation).toBe(false)
+    expect(slots[6][0].isMergedContinuation).toBe(false)
+    // 7이 명시적 merge(8~10)를 흡수해 4시간
+    expect(slots[7][0].rowSpan).toBe(4)
+    expect(slots[8][0].isMergedContinuation).toBe(true)
   })
 })
 
