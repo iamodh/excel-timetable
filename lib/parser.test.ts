@@ -262,6 +262,41 @@ describe("parseSessionBlocks", () => {
 })
 
 describe("parseTimetable", () => {
+  it("주차 라벨('N주차')이 없는 행은 그리드 끝으로 보고 weeks 추가를 중단한다", () => {
+    const rowData = [
+      // 행0~1: 범례
+      { values: [{ formattedValue: "밀착상담" }] },
+      { values: [] },
+      // 행2~3: 헤더
+      {
+        values: [
+          { formattedValue: "1회차" }, {},
+          { formattedValue: "2026.04.07 ~ 2026.05.11" }, {},
+          { formattedValue: "교육장소 : 장유" }, {},
+        ],
+      },
+      { values: [{ formattedValue: "40h" }, {}, {}, {}, {}, {}] },
+      // 행4: 1주차 헤더
+      { values: [{ formattedValue: "1주차" }, { formattedValue: "4/7(화)" }] },
+      // 행5~12: 시간 슬롯 8행
+      ...Array.from({ length: 8 }, (_, i) => ({
+        values: [{ formattedValue: `${9 + i}:00~${10 + i}:00` }, {}],
+      })),
+      // 행13~: 그리드 이후의 노이즈 영역 (빈 행 + 무관 텍스트 행)
+      { values: [] },
+      ...Array.from({ length: 8 }, () => ({
+        values: [{ formattedValue: "기타" }],
+      })),
+      { values: [{ formattedValue: "출석율 95%" }] },
+      ...Array.from({ length: 8 }, () => ({ values: [] })),
+    ]
+
+    const result = parseTimetable(rowData, [])
+
+    expect(result.weeks).toHaveLength(1)
+    expect(result.weeks[0].weekNumber).toBe(1)
+  })
+
   it("전체 시트 데이터를 TimetableData로 변환한다", () => {
     // 범례 2행 + 헤더 2행 + 1주차 (요일헤더 1행 + 시간슬롯 8행) = 13행
     const rowData = [

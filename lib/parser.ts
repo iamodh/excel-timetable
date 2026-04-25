@@ -208,6 +208,8 @@ export function parseTimetable(rowData: RowData[], merges: MergeRange[]): Timeta
   const weeks: Week[] = []
   for (let i = 0; i + WEEK_ROWS <= gridRows.length; i += WEEK_ROWS) {
     const weekBlock = gridRows.slice(i, i + WEEK_ROWS)
+    const weekLabel = weekBlock[0]?.values?.[0]?.formattedValue ?? ""
+    if (!/\d+\s*주차/.test(weekLabel)) break
     const weekHeader = parseWeekHeader(weekBlock[0])
     const slotRows = weekBlock.slice(1)
     const grid = parseGridSlots(slotRows)
