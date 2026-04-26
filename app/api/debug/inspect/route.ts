@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { connection } from "next/server"
 import { fetchTimetableData } from "@/lib/sheets"
 import { parseSessionBlocks } from "@/lib/parser"
+import { toHexColor } from "@/lib/color"
 
 const BLOCK_STRIDE = 7
 const BLOCK_WIDTH = 6
@@ -16,6 +17,10 @@ interface RawCell {
   formattedValue?: string | null
   effectiveFormat?: {
     backgroundColor?: RawBg | null
+    backgroundColorStyle?: {
+      rgbColor?: RawBg | null
+      themeColor?: string | null
+    } | null
   } | null
 }
 
@@ -30,10 +35,22 @@ interface RawMerge {
   endColumnIndex?: number | null
 }
 
-export async function GET() {
+function normalizeColor(color: RawBg | null | undefined) {
+  if (!color) return undefined
+  return {
+    red: color.red ?? undefined,
+    green: color.green ?? undefined,
+    blue: color.blue ?? undefined,
+  }
+}
+
+export async function GET(request: Request) {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ message: "Not found" }, { status: 404 })
   }
+
+  const searchParams = new URL(request.url).searchParams
+  const targetTitle = searchParams.get("title") ?? "사례관리"
 
   await connection()
   const spreadsheet = await fetchTimetableData()
@@ -166,8 +183,88 @@ export async function GET() {
       cont: s.isMergedContinuation,
     }))
 
+  const colorSummary = (cell: RawCell | undefined) => {
+    const bg = cell?.effectiveFormat?.backgroundColor
+    const bgStyle = cell?.effectiveFormat?.backgroundColorStyle
+    return {
+      hexFromBackgroundColor: toHexColor(normalizeColor(bg)),
+      backgroundColor: bg
+        ? {
+            red: bg.red ?? null,
+            green: bg.green ?? null,
+            blue: bg.blue ?? null,
+          }
+        : null,
+      backgroundColorStyle: bgStyle
+        ? {
+            themeColor: bgStyle.themeColor ?? null,
+            rgbColor: bgStyle.rgbColor
+              ? {
+                  red: bgStyle.rgbColor.red ?? null,
+                  green: bgStyle.rgbColor.green ?? null,
+                  blue: bgStyle.rgbColor.blue ?? null,
+                }
+              : null,
+          }
+        : null,
+    }
+  }
+
+  const rawCategoryCells = blocks.map((block) => {
+    const rows = [0, 1].flatMap((row) =>
+      Array.from({ length: BLOCK_WIDTH }, (_, offset) => {
+        const col = block.startCol + offset
+        const cell = rowData[row]?.values?.[col]
+        const value = cell?.formattedValue ?? ""
+        if (!value) return null
+        return {
+          row,
+          col,
+          value,
+          ...colorSummary(cell),
+        }
+      }).filter((cell) => cell !== null),
+    )
+
+    return {
+      idx: block.idx,
+      programName: block.programName,
+      parsedCategories: sessions[block.idx]?.categories ?? [],
+      rawCategories: rows,
+    }
+  })
+
+  const matchingSlots = sessions.map((session, sessionIdx) => ({
+    sessionIdx,
+    programName: session.programName,
+    matches: session.weeks.flatMap((week) =>
+      week.days.flatMap((day) =>
+        day.slots
+          .map((slot, slotIdx) => ({ slot, slotIdx }))
+          .filter(({ slot }) => slot.title.includes(targetTitle) || (slot.subtitle?.includes(targetTitle) ?? false))
+          .map(({ slot, slotIdx }) => ({
+            weekNumber: week.weekNumber,
+            date: day.date,
+            dayOfWeek: day.dayOfWeek,
+            slotIdx,
+            time: `${slot.startTime}~${slot.endTime}`,
+            title: slot.title,
+            subtitle: slot.subtitle,
+            bgColor: slot.bgColor,
+            rowSpan: slot.rowSpan,
+            cont: slot.isMergedContinuation,
+          })),
+      ),
+    ),
+  })).filter((session) => session.matches.length > 0)
+
   return NextResponse.json({
     blocks,
+    categoryAudit: {
+      targetTitle,
+      blocks: rawCategoryCells,
+      matchingSlots,
+    },
     target: {
       programName: session5?.programName,
       period: session5?.period,

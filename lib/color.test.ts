@@ -9,4 +9,8 @@ describe("toHexColor", () => {
   it("배경색 없는 셀(undefined) → #ffffff 반환", () => {
     expect(toHexColor(undefined)).toBe("#ffffff")
   })
+
+  it("구글 시트가 생략한 색상 채널은 0으로 처리한다", () => {
+    expect(toHexColor({ red: 1, green: 0.7529412 })).toBe("#ffc000")
+  })
 })
