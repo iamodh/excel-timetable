@@ -74,6 +74,7 @@ npm test         # Vitest 테스트
 - [App Router 파일 컨벤션](notes/learning/app-router-conventions.md)
 - [revalidate 설정과 미들웨어](notes/learning/revalidate-and-middleware.md)
 - [쿠키 인증](notes/learning/cookies.md)
+- [구분 열 검증 — 값 검사와 병합 검사가 독립적인 이유](notes/learning/sheets-separator-validation.md)
 
 ### 문제 해결 과정
 
@@ -84,6 +85,10 @@ npm test         # Vitest 테스트
 - [proxy 캐싱 해결 패턴 A/B/C](notes/problem-solving/proxy-caching-patterns.md) — 세 패턴 비교와 추천
 - [`"use cache"` / `cacheTag` / `revalidateTag`](notes/problem-solving/use-cache-and-tags.md) — Next.js 16 Cache Components 모델과 `"max"` 프로파일
 - [`new Date()` + cacheComponents 2단계 에러](notes/problem-solving/dynamic-date-with-cache-components.md) — 동적 값을 쉘에 두면 생기는 일과 Suspense 격리
+- [매니저 실제 시트 연동 시 발견한 파싱 버그](notes/problem-solving/real-sheet-padding-and-grid-end.md) — 첫 행/열 패딩, 그리드 끝 감지
+- [새 시트 연동 시 카테고리 중복 + 시간표 미렌더](notes/problem-solving/multi-block-and-korean-day-labels.md) — 다중 블록과 한글 요일 라벨
+- [매니저 색칠 실수 보정 — 색 기반 자동 병합](notes/problem-solving/implicit-merge-from-color.md) — 병합 누락·텍스트 위치·흰색·음영 차이 4가지 패턴 처리
+- [서버 날짜 필터링 vs 클라이언트 필터링](notes/problem-solving/server-date-filtering-vs-client-filtering.md) — 미래 회차 필터링 위치와 캐싱 모델 선택
 
 ### 기술 사용법
 
