@@ -1,46 +1,87 @@
-# 매니저가 빠뜨린 세로 병합을 색상으로 추론
+# 매니저 색칠 실수 보정 — 색 기반 자동 병합
 
-M17 작업 중 발견. 2회차 1주차 화요일 "명상을 통한 활력 충전"이 원래 2시간(2칸 세로 병합)이지만 매니저가 병합을 빠뜨리고 두 칸 모두 같은 색만 칠한 상태로 저장 → 시간표에 1시간 수업 + 색만 있는 빈 칸으로 표시됨.
+매니저가 시간표 셀을 색으로만 표시하고 명시적 Excel 병합을 빠뜨리거나 색을 일관되게 안 칠하는 패턴이 반복적으로 발견됨. 시각적으론 한 블록이지만 데이터는 분리돼 UI에서 잘게 쪼개짐.
+
+`lib/parser.ts`의 `applyImplicitMerges`가 그리드 파싱 후 한 번 더 순회하며 색 기반으로 병합을 보정한다.
 
 ---
 
-## 검토한 방안
+## 발견한 4가지 실수 패턴 / 해결책
 
-1. **색이 같으면 병합** — 같은 카테고리 연속 수업을 구분 못 함 (탈락)
-2. **빈 셀이면 위 수업의 연속** — "13~17시 사이에 진짜 빈 시간 없음" 전제에 의존 (탈락)
-3. **빈 텍스트 + 위 셀과 같은 배경색** — 두 신호의 교집합으로 1·2의 단점 모두 해소 (채택)
+### 1. 세로 병합 누락 — 색만 칠하고 명시 merge 안 함
 
-매니저 시트 규약 확인: 빈 시간은 텍스트도 색도 없는 흰색 셀, 색만 있고 텍스트 비어있는 정당한 케이스 없음 → 방안 3이 안전.
+3시간 강의를 색으로만 표시. 첫 셀에 강의명, 아래는 같은 색의 빈 셀. 시간표에 1시간 수업 + 색만 있는 빈 칸으로 분리되어 표시.
 
-## 해결 방법
+**Pass 1 (top-down 흡수)** — 빈 텍스트 + 위 셀과 같은 배경색이면 위 셀의 연속(`isMergedContinuation`)으로 처리하고 위 셀의 `rowSpan`을 늘림.
 
-`applyImplicitMerges`(`lib/parser.ts`) 신규 — `applyMerges` 다음 단계에서 슬롯 그리드를 한 번 더 순회하며 가상 merge 적용. 렌더러는 기존 `rowSpan` / `isMergedContinuation` 경로를 그대로 사용하므로 UI 수정 불필요.
+### 2. 텍스트가 가운데/아래 셀에 위치
 
-```ts
-if (cur.isMergedContinuation || cur.title) continue
-let topR = r - 1
-while (topR > 0 && slots[topR][c].isMergedContinuation) topR--
-const top = slots[topR][c]
-if (!top.title) continue
-if (!cur.bgColor || cur.bgColor !== top.bgColor) continue
-top.rowSpan = (r - topR) + cur.rowSpan
-cur.isMergedContinuation = true
+강의명을 첫 셀이 아닌 가운데/아래 셀에 입력. Pass 1만으론 텍스트 위쪽 빈 셀이 단독으로 남음.
+
+**Pass 2 (bottom-up 끌어올림)** — 앵커 셀의 위가 같은 색·빈 텍스트면 title/subtitle을 위로 lift. bottom-up 방향이라 여러 칸 빈 셀도 cascade로 한 번에 처리.
+
+### 3. 흰색이 카테고리 색
+
+`자율` 같은 흰색 카테고리가 있어 매니저가 흰색으로 칠해도, `toHexColor`(`lib/color.ts`)가 시트 기본값(배경 미설정)도 `#ffffff`로 채우기 때문에 둘을 구분할 수 없음. 무관한 흰 셀끼리 잘못 병합될 위험.
+
+**`isNoBgColor` 가드** — 흰색 근사값(`#ffffff` 채널당 ±2 이내)은 두 패스 모두 보정 제외. 매니저가 색을 비워둔 의도를 존중하고, 흰색 카테고리는 명시적 Excel 병합으로 보충하도록 위임.
+
+### 4. 같은 색에 1단계 다른 음영 사용
+
+5회차 2주차 7/28(화) `(김해대)` 케이스에서 발견. 한 셀만 `#d9d9d9`, 나머지는 `#d8d8d8` (`0.8470588 = 216/255` vs `0.8509804 = 217/255`). 시각적으론 동일하지만 정확 비교에선 다른 색으로 판정 → 블록 일부만 병합.
+
+**`isCloseColor` (±2/255 tolerance)** — 채널당 ±2 이내 차이는 같은 색 취급. 시각적으로 구분 안 되는 수준만 흡수, 실제 다른 카테고리는 영향 없음.
+
+---
+
+## Pass 순서가 중요하다 — Pass 1 → Pass 2 필수
+
+거꾸로 돌리면 인접한 두 강의가 잘못 병합됨.
+
+```
+행0: "컴퓨터" 파랑       의도: 컴퓨터(0~1) + 영상(2~3)
+행1: 빈        파랑
+행2: "영상"   파랑
+행3: 빈        파랑
 ```
 
-가드 세 개:
-- 현재 셀: 빈 텍스트 + 명시적 merge continuation 아님
-- 위 셀(merge 시작점이면 시작점까지 거슬러 올라감): **title 있어야 함** — "진짜 수업의 연속"임을 보장
-- 현재 셀의 배경색이 위 셀과 동일
+Pass 1이 먼저 r=1을 "컴퓨터의 연속", r=3을 "영상의 연속"으로 `isMergedContinuation` 마킹. Pass 2는 이 마킹을 boundary로 삼아 `if (above.isMergedContinuation) continue` 가드로 lift 차단 → 분리 유지.
 
-흡수 범위는 `cur.rowSpan`을 더해 계산 — cur가 명시적 merge 시작점이면 그 길이까지 함께 흡수한다.
+순서가 바뀌면 Pass 2가 먼저 r=1을 "영상의 lift 대상"으로 잡아 옮겨버림. 컴퓨터의 두 번째 시간을 영상이 빼앗음.
 
-## 구현 중 발견한 두 가지 빈틈
+---
 
-**1. 빈 셀끼리 묶이던 버그** — 첫 시도는 위 셀 title 가드(`if (!top.title) continue`)가 없었고, 매니저 시트의 진짜 빈 슬롯들이 세로로 묶여 한 칸이 길게 그려지는 현상 발생. 원인은 `toHexColor`가 시트 셀에 `backgroundColor`가 없을 때 기본 `#ffffff`로 채워줌(`lib/color.ts:2`) → 빈 칸끼리도 같은 흰색으로 인식되어 가상 merge 대상이 됨. "위 셀이 진짜 수업(title 존재)이어야 함" 가드 추가로 해결.
+## 핵심 가드 요약
 
-**2. 명시적 merge 시작점을 흡수할 때 길이 누락** — "13:00 단일 셀 + 14:00~17:00 명시적 병합"처럼 매니저가 한 수업을 두 단위로 나눈 케이스에서, 첫 흡수식이 `top.rowSpan = r - topR + 1`이라 1행만 합산. 14:00 셀의 명시적 `rowSpan=3`이 무시되어 13:00 셀이 2시간으로만 그려짐. `+ cur.rowSpan`으로 바꿔 흡수 대상의 길이까지 합산하도록 수정.
+```ts
+// Pass 1: 빈 셀이 위 텍스트 셀의 연속으로 흡수
+if (cur.isMergedContinuation || cur.title) continue
+if (!top.title) continue
+if (isNoBgColor(cur.bgColor) || !isCloseColor(cur.bgColor, top.bgColor)) continue
+top.rowSpan = (r - topR) + cur.rowSpan
+cur.isMergedContinuation = true
+
+// Pass 2: 앵커 title이 같은 색 빈 위 셀로 끌어올림
+if (cur.isMergedContinuation || !cur.title) continue
+if (above.title || above.isMergedContinuation) continue
+if (isNoBgColor(cur.bgColor) || !isCloseColor(cur.bgColor, above.bgColor)) continue
+above.title = cur.title; above.subtitle = cur.subtitle
+above.rowSpan = cur.rowSpan + 1
+cur → 빈 텍스트 + isMergedContinuation
+```
+
+흡수 범위 계산 시 `cur.rowSpan`까지 합산해야 cur가 명시적 merge 시작점일 때 길이가 누락되지 않음.
+
+---
+
+## 구현 중 발견한 빈틈
+
+**위 셀 title 가드 누락 시 빈 셀끼리 묶이는 버그** — 첫 시도엔 `if (!top.title) continue`가 없어 매니저 시트의 진짜 빈 슬롯들이 세로로 묶여 한 칸이 길게 그려짐. 원인은 `toHexColor`가 배경 미설정 셀에 `#ffffff`를 채워줘 빈 셀끼리도 같은 색으로 인식됨. "위 셀이 진짜 수업(title 존재)이어야 함" 가드 + `isNoBgColor`로 해결.
+
+---
 
 ## 한계
 
-- 카테고리 색이 흰색(`#ffffff`)인 수업이 시트에 흰색+텍스트로 칠해져 있고 다음 칸이 빈 흰색이면 자동 병합됨 — 색 비교는 흰색 여부와 무관하게 동일성만 본다. 운영 중 문제되면 별도 가드 검토.
-- 요일 헤더 행은 `parseGridSlots`에 들어가지 않으므로 첫 시간 슬롯이 헤더와 묶일 우려 없음 (`parseTimetable`이 `weekBlock.slice(1)`로 헤더 분리).
+- `COLOR_TOLERANCE`(±2/255) 초과의 음영 차이는 다른 색으로 판정 — 매니저가 더 다른 색을 섞으면 자동 보정 불가, 시트 정리 필요.
+- 흰색 카테고리 셀은 자동 병합 대상에서 제외 — 명시적 Excel 병합으로 보충해야 함.
+- 한 블록에 두 개 이상 title이 적힌 경우(예: 첫 행 강의명 + 둘째 행 부제 텍스트가 별도 셀)는 Pass 2의 `above.title` 가드에 막혀 별도 처리 필요. 색이 같으면 색 tolerance로 일부 흡수되지만, 두 title이 한 블록임을 추론하는 별도 규칙은 미구현.
