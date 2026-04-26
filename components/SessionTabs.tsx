@@ -1,34 +1,13 @@
 "use client"
 
-import { useState, useSyncExternalStore } from "react"
+import { useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
 
-function subscribeToHydration() {
-  return () => {}
-}
-
-function getClientSnapshot() {
-  return true
-}
-
-function getServerSnapshot() {
-  return false
-}
-
 export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
-  const isClient = useSyncExternalStore(
-    subscribeToHydration,
-    getClientSnapshot,
-    getServerSnapshot,
-  )
-  const visibleSessions = isClient
-    ? filterVisibleSessions(sessions, new Date())
-    : sessions
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const current = Math.min(
-    selectedIndex ?? (isClient ? determineCurrentSession(visibleSessions) : 0),
-    visibleSessions.length - 1,
+  const visibleSessions = filterVisibleSessions(sessions, new Date())
+  const [current, setCurrent] = useState(() =>
+    determineCurrentSession(visibleSessions)
   )
   const data = visibleSessions[current]
 
@@ -46,7 +25,7 @@ export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
         {visibleSessions.map((s, i) => (
           <button
             key={i}
-            onClick={() => setSelectedIndex(i)}
+            onClick={() => setCurrent(i)}
             className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               i === current
                 ? "bg-zinc-800 text-white"
