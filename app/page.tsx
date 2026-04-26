@@ -1,11 +1,9 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { connection } from "next/server"
 import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { AuthGate } from "@/components/AuthGate"
 import { getNotice } from "@/lib/notice"
-import { filterVisibleSessions } from "@/lib/session"
 
 async function NoticeBanner() {
   const notice = await getNotice()
@@ -22,9 +20,7 @@ async function NoticeBanner() {
 }
 
 async function VisibleSessionTabs() {
-  await connection()
-  const allSessions = await getAllTimetableData()
-  const sessions = filterVisibleSessions(allSessions, new Date())
+  const sessions = await getAllTimetableData()
   return <SessionTabs sessions={sessions} />
 }
 

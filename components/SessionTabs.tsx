@@ -1,20 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
-import { determineCurrentSession } from "@/lib/session"
+import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
+
+function subscribeToHydration() {
+  return () => {}
+}
+
+function getClientSnapshot() {
+  return true
+}
+
+function getServerSnapshot() {
+  return false
+}
 
 export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
-  const [current, setCurrent] = useState(() => determineCurrentSession(sessions))
-  const data = sessions[current]
+  const isClient = useSyncExternalStore(
+    subscribeToHydration,
+    getClientSnapshot,
+    getServerSnapshot,
+  )
+  const visibleSessions = isClient
+    ? filterVisibleSessions(sessions, new Date())
+    : sessions
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const current = Math.min(
+    selectedIndex ?? (isClient ? determineCurrentSession(visibleSessions) : 0),
+    visibleSessions.length - 1,
+  )
+  const data = visibleSessions[current]
+
+  if (!data) {
+    return (
+      <div className="max-w-4xl mx-auto rounded-lg bg-white p-6 text-center text-sm text-zinc-600 shadow-sm">
+        아직 공개된 시간표가 없습니다.
+      </div>
+    )
+  }
 
   return (
     <>
       <nav className="mb-4 flex gap-2 overflow-x-auto">
-        {sessions.map((s, i) => (
+        {visibleSessions.map((s, i) => (
           <button
             key={i}
-            onClick={() => setCurrent(i)}
+            onClick={() => setSelectedIndex(i)}
             className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               i === current
                 ? "bg-zinc-800 text-white"
