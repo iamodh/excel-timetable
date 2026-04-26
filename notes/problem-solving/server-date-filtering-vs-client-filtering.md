@@ -181,7 +181,63 @@ Google Sheets API
 
 ---
 
-## 7. 향후 대안
+## 7. 최종 구현
+
+서버 컴포넌트에서는 날짜 필터링을 하지 않는다.
+
+```tsx
+async function VisibleSessionTabs() {
+  const sessions = await getAllTimetableData()
+  return <SessionTabs sessions={sessions} />
+}
+```
+
+`connection()`과 `filterVisibleSessions(..., new Date())`를 제거했다. 이로써 시간표 데이터 fetch와 렌더가 요청 시점 동적 홀 안으로 들어가지 않는다.
+
+날짜 필터링은 `SessionTabs` 클라이언트 컴포넌트에서 직접 수행한다.
+
+```tsx
+export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
+  const visibleSessions = filterVisibleSessions(sessions, new Date())
+  const [current, setCurrent] = useState(() =>
+    determineCurrentSession(visibleSessions)
+  )
+  const data = visibleSessions[current]
+
+  // ...
+}
+```
+
+빌드 결과에서 `/`는 여전히 `◐ Partial Prerender`로 표시된다. 이는 `AuthGate`와 공지 같은 동적 홀이 남아 있기 때문이다. 중요한 변화는 시간표 영역에서 `connection()`을 제거해, 시간표 렌더가 별도의 요청 시점 동적 홀에 묶이지 않는다는 점이다.
+
+---
+
+## 8. hydration mismatch 판단
+
+처음에는 클라이언트에서만 날짜 필터를 켜기 위해 `isClient` 플래그를 고려했다.
+
+```tsx
+const visibleSessions = isClient
+  ? filterVisibleSessions(sessions, new Date())
+  : sessions
+```
+
+이 방식은 서버 프리렌더에서는 전체 회차를 렌더하고, 브라우저 연결 후에만 필터링한다. hydration mismatch를 더 엄격하게 피할 수 있지만 코드가 복잡해진다. 특히 `useEffect(() => setMounted(true), [])` 패턴은 이 프로젝트의 ESLint 규칙(`react-hooks/set-state-in-effect`)에 걸려 `useSyncExternalStore` 같은 우회가 필요했다.
+
+최종적으로는 이 복잡도를 들이지 않기로 했다.
+
+이유:
+
+- 미래 회차는 보안상 민감 데이터가 아니다.
+- 서버 프리렌더 시점에 날짜 필터링이 들어가도 기능상 문제가 작다.
+- 서버 렌더 날짜와 브라우저 hydration 날짜가 달라지는 mismatch는 자정 근처 edge case다.
+- 이 edge case를 피하려고 `useSyncExternalStore`를 도입하는 것은 현재 프로젝트 규모에서는 과하다.
+
+따라서 단순한 `new Date()` 직접 호출을 선택했다. 이 선택의 핵심은 "완벽한 hydration edge case 방어"보다 "캐싱 구조 회복과 코드 단순성"을 우선한 것이다.
+
+---
+
+## 9. 향후 대안
 
 미래 회차 미노출이 나중에 정말 중요해지면 세 번째 방식이 필요하다.
 
@@ -195,7 +251,7 @@ Google Sheets API
 
 ---
 
-## 8. 관련 문서
+## 10. 관련 문서
 
 - `dynamic-date-with-cache-components.md` — `new Date()`와 `connection()` 분리 배경
 - `proxy-caching-patterns.md` — `AuthGate`를 Suspense 홀로 분리한 이유
