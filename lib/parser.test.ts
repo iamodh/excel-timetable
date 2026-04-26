@@ -75,14 +75,16 @@ describe("applyMerges", () => {
 })
 
 describe("applyImplicitMerges", () => {
+  const make = (props: Partial<{ title: string; subtitle: string | null; bgColor: string; rowSpan: number; isMergedContinuation: boolean }>) => ({
+    title: "",
+    subtitle: null,
+    bgColor: "",
+    rowSpan: 1,
+    isMergedContinuation: false,
+    ...props,
+  })
+
   it("빈 텍스트 + 위 셀과 같은 배경색일 때만 가상 merge로 처리한다", () => {
-    const make = (props: Partial<{ title: string; bgColor: string; rowSpan: number; isMergedContinuation: boolean }>) => ({
-      title: "",
-      bgColor: "",
-      rowSpan: 1,
-      isMergedContinuation: false,
-      ...props,
-    })
 
     // 한 열에 여러 케이스를 위에서 아래로 배치
     const slots = [
@@ -97,6 +99,8 @@ describe("applyImplicitMerges", () => {
       [make({ bgColor: "#ffaa00", rowSpan: 3 })],                                  // 8: 명시적 merge 시작, 빈 텍스트, 같은 색 → 3시간만큼 흡수
       [make({ bgColor: "#ffaa00", isMergedContinuation: true })],                  // 9: 명시적 continuation
       [make({ bgColor: "#ffaa00", isMergedContinuation: true })],                  // 10: 명시적 continuation
+      [make({ title: "자율학습", bgColor: "#ffffff" })],                           // 11: 흰색(배경색 없음) → 보정 대상 제외
+      [make({ bgColor: "#ffffff" })],                                              // 12: 빈, 흰색 → 위에 텍스트 있어도 병합 안 됨
     ]
 
     applyImplicitMerges(slots)
@@ -113,6 +117,99 @@ describe("applyImplicitMerges", () => {
     // 7이 명시적 merge(8~10)를 흡수해 4시간
     expect(slots[7][0].rowSpan).toBe(4)
     expect(slots[8][0].isMergedContinuation).toBe(true)
+    // 11(흰색 텍스트) + 12(흰색 빈) — 흰색은 보정 대상 아님
+    expect(slots[11][0].rowSpan).toBe(1)
+    expect(slots[12][0].isMergedContinuation).toBe(false)
+  })
+
+  it("텍스트가 가운데/아래에 있고 위 셀이 같은 색·빈 텍스트면 위로 끌어올린다", () => {
+    const slots = [
+      // 0~2: 가운데에 텍스트 — 행 0으로 끌어올림 (rowSpan=3)
+      [make({ bgColor: "#0000ff" })],
+      [make({ title: "영상", bgColor: "#0000ff" })],
+      [make({ bgColor: "#0000ff" })],
+      // 3: 색 단절
+      [make({ bgColor: "#ff00ff" })],
+      // 4~6: 맨 아래 텍스트(부제 포함) — cascade로 행 4까지 끌어올림
+      [make({ bgColor: "#ff0000" })],
+      [make({ bgColor: "#ff0000" })],
+      [make({ title: "음악", subtitle: "기타반", bgColor: "#ff0000" })],
+      // 7: 색 단절
+      [make({ bgColor: "#ff00ff" })],
+      // 8~11: 두 강의 인접 — 끌어올림 안 됨 (행 9가 행 8의 연속이라 차단)
+      [make({ title: "컴퓨터", bgColor: "#00ff00" })],
+      [make({ bgColor: "#00ff00" })],
+      [make({ title: "회화", bgColor: "#00ff00" })],
+      [make({ bgColor: "#00ff00" })],
+      // 12~13: 흰색 텍스트 + 위 흰색 빈 — 흰색은 끌어올림 안 됨
+      [make({ bgColor: "#ffffff" })],
+      [make({ title: "자율", bgColor: "#ffffff" })],
+    ]
+
+    applyImplicitMerges(slots)
+
+    // 가운데 텍스트가 행 0으로 끌어올려짐
+    expect(slots[0][0].title).toBe("영상")
+    expect(slots[0][0].rowSpan).toBe(3)
+    expect(slots[1][0].title).toBe("")
+    expect(slots[1][0].isMergedContinuation).toBe(true)
+    expect(slots[2][0].isMergedContinuation).toBe(true)
+
+    // cascade lift + subtitle 보존
+    expect(slots[4][0].title).toBe("음악")
+    expect(slots[4][0].subtitle).toBe("기타반")
+    expect(slots[4][0].rowSpan).toBe(3)
+    expect(slots[5][0].isMergedContinuation).toBe(true)
+    expect(slots[6][0].title).toBe("")
+    expect(slots[6][0].isMergedContinuation).toBe(true)
+
+    // 두 강의 인접: 분리 유지
+    expect(slots[8][0].title).toBe("컴퓨터")
+    expect(slots[8][0].rowSpan).toBe(2)
+    expect(slots[9][0].isMergedContinuation).toBe(true)
+    expect(slots[10][0].title).toBe("회화")
+    expect(slots[10][0].rowSpan).toBe(2)
+    expect(slots[11][0].isMergedContinuation).toBe(true)
+
+    // 흰색은 끌어올림 대상 아님
+    expect(slots[12][0].title).toBe("")
+    expect(slots[12][0].rowSpan).toBe(1)
+    expect(slots[13][0].title).toBe("자율")
+    expect(slots[13][0].rowSpan).toBe(1)
+  })
+
+  it("배경색이 채널당 ±2/255 이내로 다르면 같은 색으로 보고 보정한다", () => {
+    const slots = [
+      // 0~2: 매니저가 한 셀(1)에만 1단계 다른 회색을 칠한 케이스 — 모두 같이 묶여야 함
+      [make({ title: "(김해대)", bgColor: "#d8d8d8" })],
+      [make({ bgColor: "#d9d9d9" })],
+      [make({ bgColor: "#d8d8d8" })],
+      // 3: 색 단절
+      [make({ bgColor: "#000000" })],
+      // 4~5: 큰 차이는 다른 색으로 — 병합 안 됨
+      [make({ title: "수업", bgColor: "#aabbcc" })],
+      [make({ bgColor: "#a0b5c5" })], // 각 채널 5/255 이상 차이
+      // 6: 색 단절
+      [make({ bgColor: "#000000" })],
+      // 7~8: 흰색에 가까운 색은 보정 대상 아님
+      [make({ title: "자율", bgColor: "#fefefe" })],
+      [make({ bgColor: "#fefefe" })],
+    ]
+
+    applyImplicitMerges(slots)
+
+    // 1단계 차이 → 같은 색으로 묶임
+    expect(slots[0][0].rowSpan).toBe(3)
+    expect(slots[1][0].isMergedContinuation).toBe(true)
+    expect(slots[2][0].isMergedContinuation).toBe(true)
+
+    // 큰 차이 → 분리
+    expect(slots[4][0].rowSpan).toBe(1)
+    expect(slots[5][0].isMergedContinuation).toBe(false)
+
+    // 흰색 근사 → 보정 안 됨
+    expect(slots[7][0].rowSpan).toBe(1)
+    expect(slots[8][0].isMergedContinuation).toBe(false)
   })
 })
 

@@ -151,14 +151,43 @@ export function applyMerges(slots: MergeableSlot[][], merges: MergeRange[]): voi
 
 interface ColorMergeableSlot extends MergeableSlot {
   title: string
+  subtitle: string | null
   bgColor: string
 }
 
-// 매니저가 세로 병합을 빠뜨리고 색만 칠한 셀을 위 셀의 연속으로 보정한다.
-// 빈 텍스트 + 위 셀과 같은 배경색 두 조건을 모두 만족할 때만 병합으로 추정.
+// 매니저가 색을 칠할 때 1~2단계 음영이 다른 회색을 섞어 쓰는 사례가 있어,
+// 채널당 ±2/255 이내 차이는 같은 색으로 본다 (시각적으로 구분 불가능한 수준).
+const COLOR_TOLERANCE = 2
+
+function isCloseColor(a: string, b: string): boolean {
+  if (a === b) return true
+  if (a.length !== 7 || b.length !== 7) return false
+  const aR = parseInt(a.slice(1, 3), 16)
+  const aG = parseInt(a.slice(3, 5), 16)
+  const aB = parseInt(a.slice(5, 7), 16)
+  const bR = parseInt(b.slice(1, 3), 16)
+  const bG = parseInt(b.slice(3, 5), 16)
+  const bB = parseInt(b.slice(5, 7), 16)
+  return (
+    Math.abs(aR - bR) <= COLOR_TOLERANCE &&
+    Math.abs(aG - bG) <= COLOR_TOLERANCE &&
+    Math.abs(aB - bB) <= COLOR_TOLERANCE
+  )
+}
+
+// 배경색이 없는 셀은 toHexColor가 "#ffffff"로 반환하므로(명시 흰색과 구분 불가),
+// 흰색 근사값은 모두 보정 대상에서 제외한다 — 매니저가 색을 비워둔 의도를 존중.
+function isNoBgColor(color: string): boolean {
+  return !color || isCloseColor(color, "#ffffff")
+}
+
+// 매니저가 세로 병합을 빠뜨리고 색만 칠한 셀을 색 기반으로 보정한다.
+// Pass 1 (top-down): 빈 텍스트 + 위 셀과 같은 배경색이면 위 셀의 연속으로 흡수.
+// Pass 2 (bottom-up): 텍스트가 가운데/아래에 있고 위 셀이 같은 색·빈 텍스트면 위로 끌어올림 (cascade).
 export function applyImplicitMerges(slots: ColorMergeableSlot[][]): void {
   if (slots.length === 0) return
   const cols = slots[0].length
+
   for (let c = 0; c < cols; c++) {
     for (let r = 1; r < slots.length; r++) {
       const cur = slots[r][c]
@@ -167,9 +196,26 @@ export function applyImplicitMerges(slots: ColorMergeableSlot[][]): void {
       while (topR > 0 && slots[topR][c].isMergedContinuation) topR--
       const top = slots[topR][c]
       if (!top.title) continue
-      if (!cur.bgColor || cur.bgColor !== top.bgColor) continue
+      if (isNoBgColor(cur.bgColor) || !isCloseColor(cur.bgColor, top.bgColor)) continue
       top.rowSpan = (r - topR) + cur.rowSpan
       cur.isMergedContinuation = true
+    }
+  }
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = slots.length - 1; r >= 1; r--) {
+      const cur = slots[r][c]
+      if (cur.isMergedContinuation || !cur.title) continue
+      const above = slots[r - 1][c]
+      if (above.title || above.isMergedContinuation) continue
+      if (isNoBgColor(cur.bgColor) || !isCloseColor(cur.bgColor, above.bgColor)) continue
+      above.title = cur.title
+      above.subtitle = cur.subtitle
+      above.rowSpan = cur.rowSpan + 1
+      cur.title = ""
+      cur.subtitle = null
+      cur.isMergedContinuation = true
+      cur.rowSpan = 1
     }
   }
 }
