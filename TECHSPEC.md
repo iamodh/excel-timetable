@@ -240,7 +240,7 @@ DB 없음. Google Sheets → 파싱 → 내부 TypeScript 타입으로 변환.
 각 슬롯의 bgColor는 항상 해당 셀의 배경색에서 직접 추출한다. 카테고리 범례와 색상이 일치하면 카테고리를 알 수 있고, 일치하는 카테고리가 없는 셀도 배경색은 그대로 표시된다.
 시트에서 색상을 변경하면 웹에도 자동 반영된다.
 
-**목표 시수 매핑.** 카테고리별 5회차 누적 목표 시간은 코드에서 결정한다 (시트 파싱 대상 아님). 기본 16h, 예외 카테고리(`지역맞춤`, `외부연계`, `자율`)는 `null`(목표 없음). 시트의 카테고리 이름과 매칭하여 적용 — 자세한 로직은 §7.9 참조.
+**목표 시수 매핑.** 카테고리별 5회차 누적 목표 시간은 코드에서 결정한다 (시트 파싱 대상 아님). 기본 16h, 예외 카테고리(`지역맞춤 특화`, `외부연계`, `자율`)는 `null`(목표 없음). 시트의 카테고리 이름과 매칭하여 적용 — 자세한 로직은 §7.9 참조.
 
 ---
 
@@ -456,7 +456,7 @@ function determineCurrentSession(sessions: TimetableData[]): number {
 
 ```typescript
 // lib/categoryTargets.ts
-const NO_TARGET_CATEGORIES = new Set(["지역맞춤", "외부연계", "자율"])
+const NO_TARGET_CATEGORIES = new Set(["지역맞춤 특화", "외부연계", "자율"])
 const DEFAULT_TARGET_HOURS = 16
 
 export function getCategoryTargetHours(name: string): number | null {
