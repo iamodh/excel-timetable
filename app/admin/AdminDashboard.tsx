@@ -13,15 +13,15 @@ export default function AdminDashboard({ currentNotice }: { currentNotice: strin
         <PinChangeSection />
         <RevalidateSection />
         <NoticeSection currentNotice={currentNotice} />
-        <div className="text-center pb-4">
+        <section className="bg-white rounded-lg shadow p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-zinc-700">검증 도구</h2>
           <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 py-2 text-sm text-zinc-600 hover:text-zinc-900"
+            href="/admin/categories"
+            className="block w-full rounded border border-zinc-300 px-3 py-2 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-100"
           >
-            <span>🏠</span>
-            <span>시간표 보기</span>
+            카테고리 합계 보기
           </Link>
-        </div>
+        </section>
       </div>
     </div>
   )

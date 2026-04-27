@@ -3,8 +3,15 @@
 import { useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
+import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
 
-export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
+export function SessionTabs({
+  sessions,
+  highlightCategory,
+}: {
+  sessions: TimetableData[]
+  highlightCategory?: string
+}) {
   const visibleSessions = filterVisibleSessions(sessions, new Date())
   const [current, setCurrent] = useState(() =>
     determineCurrentSession(visibleSessions)
@@ -38,8 +45,27 @@ export function SessionTabs({ sessions }: { sessions: TimetableData[] }) {
       </nav>
       <TimetableHeader data={data} />
       <CategoryLegend categories={data.categories} />
+      <TimetableGrid data={data} highlightCategory={highlightCategory} />
+    </>
+  )
+}
+
+export function TimetableGrid({
+  data,
+  highlightCategory,
+}: {
+  data: TimetableData
+  highlightCategory?: string
+}) {
+  return (
+    <>
       {data.weeks.map((week) => (
-        <WeekGrid key={week.weekNumber} week={week} />
+        <WeekGrid
+          key={week.weekNumber}
+          week={week}
+          categories={data.categories}
+          highlightCategory={highlightCategory}
+        />
       ))}
     </>
   )
@@ -78,7 +104,15 @@ function CategoryLegend({ categories }: { categories: Category[] }) {
 
 const COL_WIDTH = 120
 
-function WeekGrid({ week }: { week: Week }) {
+function WeekGrid({
+  week,
+  categories,
+  highlightCategory,
+}: {
+  week: Week
+  categories: Category[]
+  highlightCategory?: string
+}) {
   const timeSlots = week.days[0]?.slots ?? []
   const tableWidth = (week.days.length + 1) * COL_WIDTH
 
@@ -118,7 +152,12 @@ function WeekGrid({ week }: { week: Week }) {
                   if (!slot || slot.isMergedContinuation) return null
 
                   return (
-                    <SlotCell key={day.date} slot={slot} />
+                    <SlotCell
+                      key={day.date}
+                      slot={slot}
+                      categories={categories}
+                      highlightCategory={highlightCategory}
+                    />
                   )
                 })}
               </tr>
@@ -130,22 +169,35 @@ function WeekGrid({ week }: { week: Week }) {
   )
 }
 
-function SlotCell({ slot }: { slot: Slot }) {
+function SlotCell({
+  slot,
+  categories,
+  highlightCategory,
+}: {
+  slot: Slot
+  categories: Category[]
+  highlightCategory?: string
+}) {
   const isEmpty = !slot.title
+  const isDimmed = !isEmpty && shouldDimSlotForCategory(
+    slot.bgColor,
+    categories,
+    highlightCategory
+  )
 
   return (
     <td
       className="border border-zinc-200 px-2 py-2 text-center"
       rowSpan={slot.rowSpan > 1 ? slot.rowSpan : undefined}
-      style={!isEmpty ? { backgroundColor: slot.bgColor } : undefined}
+      style={!isEmpty ? { backgroundColor: isDimmed ? "#f4f4f5" : slot.bgColor } : undefined}
     >
       {slot.title && (
         <>
-          <div className="font-medium" style={{ color: slot.textColor }}>
+          <div className="font-medium" style={{ color: isDimmed ? "#71717a" : slot.textColor }}>
             {slot.title}
           </div>
           {slot.subtitle && (
-            <div className="text-zinc-600 mt-0.5">{slot.subtitle}</div>
+            <div className={`mt-0.5 ${isDimmed ? "text-zinc-400" : "text-zinc-600"}`}>{slot.subtitle}</div>
           )}
         </>
       )}
