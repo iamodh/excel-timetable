@@ -1,6 +1,6 @@
 # `"use cache"` / `cacheTag` / `revalidateTag` — Next.js 16 캐시 모델
 
-`proxy-caching-patterns.md`의 패턴 A를 실제 구현하려고 보니, 그 문서에 적힌 `revalidate = false` + `<Suspense>` 조합만으로는 Next.js 16에서 `○ /`가 되지 않았다. Next.js 16에서 PPR(`experimental_ppr`)이 **Cache Components** 모델로 흡수되었기 때문이다. 이 문서는 그때 실제로 쓰게 된 세 가지 API를 정리한다.
+`proxy-caching-patterns.md`의 패턴 A를 실제 구현하려고 보니, 그 문서에 적힌 `revalidate = false` + `<Suspense>` 조합만으로는 Next.js 16에서 `○ /`(정적 페이지 — `next build` 출력 기호)가 되지 않았다. Next.js 16에서 PPR(`experimental_ppr`)이 **Cache Components** 모델로 흡수되었기 때문이다. 이 문서는 그때 실제로 쓰게 된 세 가지 API를 정리한다.
 
 ---
 
@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
 }
 ```
 
-이 플래그를 켜면 Next.js가 "정적 쉘 + 동적 홀" 모델(PPR의 후속)을 활성화한다. 켜기 전까지는 `cookies()`가 트리 어딘가에 있기만 해도 페이지 전체가 `ƒ`로 판정되며, `<Suspense>`를 둘러도 소용없다. 켠 뒤에는 Suspense가 "여기 안쪽만 요청 시점에 실행해도 된다"는 **경계 선언** 역할을 제대로 한다.
+이 플래그를 켜면 Next.js가 "정적 쉘 + 동적 홀" 모델(PPR의 후속)을 활성화한다. 켜기 전까지는 `cookies()`가 트리 어딘가에 있기만 해도 페이지 전체가 `ƒ`(동적)로 판정되며, `<Suspense>`를 둘러도 소용없다. 켠 뒤에는 Suspense가 "여기 안쪽만 요청 시점에 실행해도 된다"는 **경계 선언** 역할을 제대로 한다.
 
 부작용: Cache Components가 켜지면 "캐싱은 기본적으로 opt-in"이 된다. 즉 `cookies()` 없이 그냥 외부 API를 호출하는 페이지도 기본은 동적이고, 캐시하려면 아래 `"use cache"`를 명시적으로 달아야 한다.
 
