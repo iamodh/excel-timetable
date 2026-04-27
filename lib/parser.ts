@@ -1,4 +1,4 @@
-import { toHexColor, toTextColor } from "./color"
+import { isCloseColor, toHexColor, toTextColor } from "./color"
 
 interface MergeRange {
   startRowIndex: number
@@ -153,26 +153,6 @@ interface ColorMergeableSlot extends MergeableSlot {
   title: string
   subtitle: string | null
   bgColor: string
-}
-
-// 매니저가 색을 칠할 때 1~2단계 음영이 다른 회색을 섞어 쓰는 사례가 있어,
-// 채널당 ±2/255 이내 차이는 같은 색으로 본다 (시각적으로 구분 불가능한 수준).
-const COLOR_TOLERANCE = 2
-
-function isCloseColor(a: string, b: string): boolean {
-  if (a === b) return true
-  if (a.length !== 7 || b.length !== 7) return false
-  const aR = parseInt(a.slice(1, 3), 16)
-  const aG = parseInt(a.slice(3, 5), 16)
-  const aB = parseInt(a.slice(5, 7), 16)
-  const bR = parseInt(b.slice(1, 3), 16)
-  const bG = parseInt(b.slice(3, 5), 16)
-  const bB = parseInt(b.slice(5, 7), 16)
-  return (
-    Math.abs(aR - bR) <= COLOR_TOLERANCE &&
-    Math.abs(aG - bG) <= COLOR_TOLERANCE &&
-    Math.abs(aB - bB) <= COLOR_TOLERANCE
-  )
 }
 
 // 배경색이 없는 셀은 toHexColor가 "#ffffff"로 반환하므로(명시 흰색과 구분 불가),
