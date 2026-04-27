@@ -93,4 +93,14 @@ describe("filterVisibleSessions", () => {
 
     expect(visible.map((s) => s.programName)).toEqual(["1회차", "2회차"])
   })
+
+  it("모든 회차가 미래(교육 기간 전)이면 빈 배열을 반환한다", () => {
+    const sessions = [
+      makeSessionWithPeriod("2026.05.12 ~ 2026.06.15", "1회차"),
+      makeSessionWithPeriod("2026.06.16 ~ 2026.07.20", "2회차"),
+    ]
+    const today = new Date(2026, 3, 22) // 2026-04-22
+
+    expect(filterVisibleSessions(sessions, today)).toEqual([])
+  })
 })
