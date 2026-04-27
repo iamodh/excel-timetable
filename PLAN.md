@@ -355,10 +355,10 @@
 **Implementation**
 - [x] `lib/categoryTargets.ts` — `getCategoryTargetHours(name)` 함수 → fc64e1e
 - [x] `lib/categoryStats.ts` — 회차별/카테고리별 배치 시간 합산 로직 → fc64e1e
-- [ ] `<TimetableGrid>` 에 `highlightCategory?: string` prop 추가 (비매칭 셀 회색 처리)
-- [ ] 매트릭스 표 클라이언트 컴포넌트 — 행 클릭 = 카테고리 선택, 정렬(부족분 큰 순 → 구분선 → 목표 없음)
-- [ ] `app/admin/categories/page.tsx` — 매트릭스 표 + 그리드 통합 (Server Component, 회차 탭은 클라이언트 상태)
-- [ ] `/admin` 페이지에서 `/admin/categories`로 이동하는 링크 추가
+- [x] `<TimetableGrid>` 에 `highlightCategory?: string` prop 추가 (비매칭 셀 회색 처리) → fdcd35f
+- [x] 매트릭스 표 클라이언트 컴포넌트 — 행 클릭 = 카테고리 선택, 정렬(부족분 큰 순 → 구분선 → 목표 없음) → fdcd35f
+- [x] `app/admin/categories/page.tsx` — 매트릭스 표 + 그리드 통합 (Server Component, 회차 탭은 클라이언트 상태) → fdcd35f
+- [x] `/admin` 페이지에서 `/admin/categories`로 이동하는 링크 추가 → fdcd35f
 
 **Manual Tests**
 - [ ] 매트릭스 표에 모든 카테고리 노출 + 회차별/합계 시간이 시트 내용과 일치
