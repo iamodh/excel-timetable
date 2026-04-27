@@ -74,6 +74,7 @@ npm test         # Vitest 테스트
 - [App Router 파일 컨벤션](notes/learning/app-router-conventions.md)
 - [revalidate 설정과 미들웨어](notes/learning/revalidate-and-middleware.md)
 - [stale-while-revalidate 캐시 사이클](notes/learning/stale-while-revalidate.md) — fresh/stale/expired와 cacheLife 프로파일 선택 기준
+- [React Query 캐싱 vs Next.js 캐싱](notes/learning/react-query-vs-nextjs-caching.md) — 저장 위치·공유 범위가 다른 두 모델
 - [쿠키 인증](notes/learning/cookies.md)
 - [구분 열 검증 — 값 검사와 병합 검사가 독립적인 이유](notes/learning/sheets-separator-validation.md)
 
