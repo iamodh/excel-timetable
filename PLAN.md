@@ -349,12 +349,12 @@
 - 목표 시수는 코드 상수로 관리 (16h 고정, 예외 3개 null) — 시트 파싱 변경 없음
 
 **Unit Tests**
-- [ ] `getCategoryTargetHours`: 기본 카테고리 → 16, 예외(지역맞춤/외부연계/자율) → null
-- [ ] 회차×카테고리 시간 합산: 색상 매칭 + rowSpan 누적 + `isMergedContinuation` 제외 검증
+- [x] `getCategoryTargetHours`: 기본 카테고리 → 16, 예외(지역맞춤/외부연계/자율) → null → fc64e1e
+- [x] 회차×카테고리 시간 합산: 색상 매칭 + rowSpan 누적 + `isMergedContinuation` 제외 검증 → fc64e1e
 
 **Implementation**
-- [ ] `lib/categoryTargets.ts` — `getCategoryTargetHours(name)` 함수
-- [ ] `lib/categoryStats.ts` — 회차별/카테고리별 배치 시간 합산 로직
+- [x] `lib/categoryTargets.ts` — `getCategoryTargetHours(name)` 함수 → fc64e1e
+- [x] `lib/categoryStats.ts` — 회차별/카테고리별 배치 시간 합산 로직 → fc64e1e
 - [ ] `<TimetableGrid>` 에 `highlightCategory?: string` prop 추가 (비매칭 셀 회색 처리)
 - [ ] 매트릭스 표 클라이언트 컴포넌트 — 행 클릭 = 카테고리 선택, 정렬(부족분 큰 순 → 구분선 → 목표 없음)
 - [ ] `app/admin/categories/page.tsx` — 매트릭스 표 + 그리드 통합 (Server Component, 회차 탭은 클라이언트 상태)
