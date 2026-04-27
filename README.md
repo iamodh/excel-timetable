@@ -91,6 +91,7 @@ npm test         # Vitest 테스트
 - [새 시트 연동 시 카테고리 중복 + 시간표 미렌더](notes/problem-solving/multi-block-and-korean-day-labels.md) — 다중 블록과 한글 요일 라벨
 - [매니저 색칠 실수 보정 — 색 기반 자동 병합](notes/problem-solving/implicit-merge-from-color.md) — 병합 누락·텍스트 위치·흰색·음영 차이 4가지 패턴 처리
 - [서버 날짜 필터링 vs 클라이언트 필터링](notes/problem-solving/server-date-filtering-vs-client-filtering.md) — 미래 회차 필터링 위치와 캐싱 모델 선택
+- [M18 카테고리 필터 → 관리자 합계 대시보드](notes/problem-solving/category-filter-vs-target-dashboard.md) — 매니저 요구의 본질을 다시 묻고 설계 방향을 바꾼 기록
 
 ### 기술 사용법
 
