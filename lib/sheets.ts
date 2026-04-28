@@ -64,6 +64,5 @@ export async function getAllTimetableData(): Promise<TimetableData[]> {
   cacheLife("max")
   cacheTag("timetable")
   const spreadsheet = await fetchTimetableData()
-  console.log("[sheets] fetching from Google")
   return extractFirstTabSessions(spreadsheet)
 }
