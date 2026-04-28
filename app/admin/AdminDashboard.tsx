@@ -22,6 +22,15 @@ export default function AdminDashboard({ currentNotice }: { currentNotice: strin
             카테고리 합계 보기
           </Link>
         </section>
+        <section className="bg-white rounded-lg shadow p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-zinc-700">도움말</h2>
+          <Link
+            href="/admin/guide"
+            className="block w-full rounded border border-zinc-300 px-3 py-2 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+          >
+            관리자 기능 가이드
+          </Link>
+        </section>
       </div>
     </div>
   )
