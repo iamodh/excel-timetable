@@ -63,6 +63,7 @@ export async function getAllTimetableData(): Promise<TimetableData[]> {
   "use cache"
   cacheLife("max")
   cacheTag("timetable")
+      console.log("[sheets] fetchTimetableData", new Date().toISOString())
   const spreadsheet = await fetchTimetableData()
   return extractFirstTabSessions(spreadsheet)
 }
