@@ -1,5 +1,5 @@
 import { google, type sheets_v4 } from "googleapis"
-import { cacheTag } from "next/cache"
+import { cacheLife, cacheTag } from "next/cache"
 import { parseSessionBlocks, type TimetableData } from "./parser"
 
 export async function fetchTimetableData() {
@@ -61,7 +61,9 @@ export function extractFirstTabSessions(
 
 export async function getAllTimetableData(): Promise<TimetableData[]> {
   "use cache"
+  cacheLife("max")
   cacheTag("timetable")
   const spreadsheet = await fetchTimetableData()
+  console.log("[sheets] fetching from Google")
   return extractFirstTabSessions(spreadsheet)
 }
