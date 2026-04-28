@@ -1,5 +1,5 @@
 import { google, type sheets_v4 } from "googleapis"
-import { cacheLife, cacheTag } from "next/cache"
+import { unstable_cache } from "next/cache"
 import { parseSessionBlocks, type TimetableData } from "./parser"
 
 export async function fetchTimetableData() {
@@ -59,11 +59,12 @@ export function extractFirstTabSessions(
   return parseSessionBlocks(rowData, merges)
 }
 
-export async function getAllTimetableData(): Promise<TimetableData[]> {
-  "use cache"
-  cacheLife("max")
-  cacheTag("timetable")
-      console.log("[sheets] fetchTimetableData", new Date().toISOString())
-  const spreadsheet = await fetchTimetableData()
-  return extractFirstTabSessions(spreadsheet)
-}
+export const getAllTimetableData = unstable_cache(
+  async (): Promise<TimetableData[]> => {
+    console.log("[sheets] fetchTimetableData", new Date().toISOString())
+    const spreadsheet = await fetchTimetableData()
+    return extractFirstTabSessions(spreadsheet)
+  },
+  ["timetable"],
+  { tags: ["timetable"], revalidate: false },
+)

@@ -1,5 +1,5 @@
 import { Redis } from "@upstash/redis"
-import { cacheLife, cacheTag } from "next/cache"
+import { unstable_cache } from "next/cache"
 
 const STUDENT_PIN_KEY = "student_pin"
 
@@ -12,13 +12,14 @@ function getRedis(): Redis {
   return redisClient
 }
 
-export async function getStoredPin(): Promise<string | null> {
-  "use cache"
-  cacheLife("max")
-  cacheTag("student_pin")
-  const pin = await getRedis().get<string>(STUDENT_PIN_KEY)
-  return pin !== null ? String(pin) : null
-}
+export const getStoredPin = unstable_cache(
+  async (): Promise<string | null> => {
+    const pin = await getRedis().get<string>(STUDENT_PIN_KEY)
+    return pin !== null ? String(pin) : null
+  },
+  ["student_pin"],
+  { tags: ["student_pin"], revalidate: false },
+)
 
 export async function setStoredPin(pin: string): Promise<void> {
   await getRedis().set(STUDENT_PIN_KEY, pin)
