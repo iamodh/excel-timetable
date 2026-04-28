@@ -1,5 +1,34 @@
 # TODO
 
+## 시간표 최신화 후 첫 로딩 병목 확인
+
+관리자 페이지에서 `시간표 최신화` 실행 후 홈으로 돌아갈 때, 빌드 후 첫 접속과 비슷한 서버 대기 시간이 발생할 수 있음. 현재 구현은 Google Sheets API에서 첫 탭의 grid data를 넓게 받아오고 서버에서 전체 row 기반으로 파싱한다.
+
+현재 흐름:
+
+- `lib/sheets.ts`의 `spreadsheets.get({ includeGridData: true })`가 값뿐 아니라 서식/색상/merge 정보를 포함한 큰 응답을 받음
+- `ranges` 제한이 없어 첫 탭의 불필요한 빈 행/열까지 응답에 포함될 가능성이 있음
+- `extractFirstTabSessions()`가 첫 행/첫 열 padding만 제거한 뒤 `parseSessionBlocks()`로 전달
+- `parseSessionBlocks()`는 회차 블록마다 전체 `rowData.map(...slice)`를 수행
+- 각 회차는 주차/슬롯 파싱, 색상 변환, 명시/암묵 병합 보정을 거쳐 `SessionTabs` 렌더 데이터가 됨
+
+### 확인할 것
+
+- [ ] `fetchTimetableData()` 내부에서 Google Sheets API 호출 시간 측정
+- [ ] `extractFirstTabSessions()` / `parseSessionBlocks()` 파싱 시간 측정
+- [ ] `spreadsheets.get` 응답 크기 또는 row/column 수 확인
+- [ ] 최신화 직후 첫 `/` 요청에서 API 호출 대기와 파싱 중 무엇이 병목인지 구분
+
+### 최적화 후보
+
+- [ ] `spreadsheets.get`에 필요한 첫 탭 범위만 `ranges`로 지정
+- [ ] `fields` 파라미터로 필요한 값만 제한: `formattedValue`, 배경색, 글자색, merges 등
+- [ ] 실제 사용 범위 밖 빈 행/열을 덜 받도록 시트 범위 또는 파서 입력 범위 축소
+- [ ] 회차 블록별 `rowData.map(...slice)` 반복 비용이 의미 있으면 파서 구조 개선
+- [ ] 계측용 로그는 디버깅 후 반드시 제거
+
+---
+
 ## 매니저 시트 → Google Sheets 변환
 
 매니저님 시간표 파일이 .xlsx 업로드 형식이라 Sheets API에서 `This operation is not supported for this document` 오류가 발생함. 네이티브 Google Sheets로 변환해야 API 호출 가능.
