@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache"
 import { setStoredPin } from "@/lib/pin"
 import { verifyAdminToken } from "@/lib/admin-auth"
 
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   }
 
   await setStoredPin(newPin)
+  revalidateTag("student_pin", "max")
 
   return Response.json({ message: "PIN이 변경되었습니다." })
 }
