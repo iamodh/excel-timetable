@@ -81,7 +81,7 @@ in a slow user experience.
 
 `connection()`은 "이 렌더는 요청 시점" 을 선언하는 API지만, **페이지 함수 루트에서 호출**하면 그 선언이 페이지 전체(= 쉘)에 번진다. `cacheComponents` 모드의 핵심은 "쉘은 prerender, 홀만 dynamic"인데 쉘 자체를 dynamic으로 만들어버려 CDN에 얼려둘 수 있는 조각이 사라진다.
 
-Next.js는 이 낭비를 막으려고 "Suspense 바깥에서 `connection()` 호출 금지"를 강제한다. 즉 동적 선언은 **반드시 Suspense 경계 안쪽**에서 이루어져야 한다 (→ `shell-and-hole.md §3`).
+Next.js는 이 낭비를 막으려고 "Suspense 바깥에서 `connection()` 호출 금지"를 강제한다. 즉 동적 선언은 **반드시 Suspense 경계 안쪽**에서 이루어져야 한다 (→ `learning/rendering/04-shell-and-hole.md §3`).
 
 ---
 
@@ -138,7 +138,7 @@ export default function TimetablePage() {
 | 분리의 축 | 캐시 경계 (캐시 히트 복구) | Prerender 경계 (쉘 prerender 복구) |
 | 얻은 것 | Sheets API 호출 횟수 감소 | 에러 해소 + 쉘 CDN 캐시 유지 |
 
-오늘 문제는 **Sheets API 호출과 무관**했다. `"use cache"`가 함수 레벨에서 이미 API 호출을 0회로 묶어둔 덕분. 함수 레벨 캐시와 prerender 경계는 독립 축이라는 점이 핵심 (→ `shell-and-hole.md §5`).
+오늘 문제는 **Sheets API 호출과 무관**했다. `"use cache"`가 함수 레벨에서 이미 API 호출을 0회로 묶어둔 덕분. 함수 레벨 캐시와 prerender 경계는 독립 축이라는 점이 핵심 (→ `learning/rendering/04-shell-and-hole.md §5`).
 
 ---
 
@@ -167,7 +167,7 @@ export default function TimetablePage() {
 
 ## 8. 관련 문서
 
-- `learning/prerender-and-dynamic-rendering.md` — 두 축(서버/클라이언트 × 정적/동적)의 개념
-- `learning/shell-and-hole.md` — `cacheComponents` 쉘+홀 모델
+- `learning/rendering/03-prerender-vs-dynamic.md` — 두 축(서버/클라이언트 × 정적/동적)의 개념
+- `learning/rendering/04-shell-and-hole.md` — `cacheComponents` 쉘+홀 모델
 - `use-cache-and-tags.md` — 함수 레벨 캐시 (`"use cache"` / `cacheTag`)
 - `proxy-caching-patterns.md` — 원본이 된 "패턴 A" (AuthGate 분리 사례)
