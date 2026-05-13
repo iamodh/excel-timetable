@@ -383,7 +383,9 @@
 **작업 로그**
 
 - [x] Sheets API 응답 슬림화 — `sheets.spreadsheets.get`에 `fields` 마스크 적용해 parser가 실제 사용하는 필드만 수신 (`notes/problem-solving/sheets-fetch-slow-on-cache-miss.md` 참고) → 0b86713
-- [x] before/after 측정 결과를 노트에 기입 (fetch ms, LCP, Performance 점수) → 노트 "결과" 섹션 작성 (fetch 9,996→3,397ms, element render delay 10,460→3,800ms)
+- [x] Sheets API `ranges` 추가 — A1:AI100으로 사용 영역만 요청. fields 마스크 후 3,397→969ms 추가 단축, LCP 0.4s 도달 → e587731
+- [x] before/after 측정 결과를 노트에 기입 (fetch ms, LCP, Performance 점수) → 노트 "결과" 섹션 작성 (fetch 9,996→969ms -90%, LCP 10.46s→0.4s -96%)
+- [ ] 시트 사용 영역 검증 — 매니저가 회차/주차를 늘려 A1:AI100을 넘으면 학생 화면에서 조용히 잘림. M19/M20에서 "마지막 행/열에 데이터 있으면 경고" 검증 추가
 - [ ] 관리자 카테고리 매트릭스 선택 행 강조 강화 (더 진한 배경 + 좌측 강조 바 등)
 - [ ] 관리자 카테고리 회차 탭 선택 상태 시인성 점검 (현재 `bg-zinc-800`)
 - [ ] 카테고리 시수 회차별 합계 vs 실제 시트 셀 색상 카운트 직접 대조 — 예외 케이스(병합 누락 자동 보정 셀, tolerance로 합쳐진 색) 포함

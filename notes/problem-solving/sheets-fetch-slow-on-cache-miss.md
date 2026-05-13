@@ -103,7 +103,10 @@ DevTools 패널로 측정할 경우, `/admin` 로그인 후 콘솔에서 `await 
 
 ## 해결 방법
 
-`sheets.spreadsheets.get`의 `includeGridData: true`를 **`fields` 마스크**로 교체. parser가 실제로 읽는 4가지 경로만 응답에 포함시켜 셀당 페이로드를 좁힘.
+`sheets.spreadsheets.get` 호출에 두 가지 좁히기를 같이 적용:
+
+1. **`fields` 마스크** — parser가 실제로 읽는 경로만 응답에 포함 (출력 좁히기)
+2. **`ranges` 파라미터** — 실제 사용 영역(A1:AI100)만 요청 (처리 범위 좁히기)
 
 ```ts
 // before
@@ -115,12 +118,13 @@ const response = await sheets.spreadsheets.get({
 // after
 const response = await sheets.spreadsheets.get({
   spreadsheetId: sheetId,
+  ranges: ["A1:AI100"],
   fields:
     "sheets(data(rowData(values(formattedValue,effectiveFormat(backgroundColor,textFormat(foregroundColor))))),merges)",
 })
 ```
 
-parser와 1:1 매핑:
+parser와 fields 마스크 1:1 매핑:
 
 | 마스크 경로 | parser에서 읽는 곳 |
 |-------------|--------------------|
@@ -129,31 +133,48 @@ parser와 1:1 매핑:
 | `effectiveFormat.textFormat.foregroundColor` | `toTextColor(cell.effectiveFormat?.textFormat?.foregroundColor)` (parseGridSlots) |
 | `merges` | `firstTab.merges` (extractFirstTabSessions → parseSessionBlocks → applyMerges) |
 
-마스크에 빠진 경로(`userEnteredValue`, `note`, `hyperlink`, `effectiveFormat.padding`, `borders`, `textFormatRuns`, `horizontalAlignment` 등)가 빈 셀에서도 기본값을 ~500바이트씩 끌어왔던 게 핵심 병목이었음. 1000행 × 26열 기본 그리드에서 빈 셀 ~24,000개 × 500바이트 ≈ 12 MB가 "아무것도 없는 영역의 기본 포맷"으로만 흐르고 있었던 것.
+ranges 산정 근거: 6열/블록 + 구분열 1 × 회차 5~6 + 첫 열 패딩 = 35열 (A~AI), 1행 패딩 + 4행 헤더 + 9행/주 × 8주 = 77행 → 여유 두고 100행.
 
-향후 parser가 새 필드를 읽기 시작하면 이 마스크도 함께 늘어나야 함 — 마스크에 없는 필드는 `undefined`로 와서 조용히 깨질 수 있음.
+### 두 최적화의 역할 차이 (사후 정정)
+
+처음엔 "fields 마스크로 빈 셀이 이미 가벼워졌으니 ranges는 marginal일 것"이라고 예측했지만, 실측에서 ranges가 추가로 -71%를 더 줄였음. 가설이 틀린 이유:
+
+| 비용 축 | `fields` 마스크가 줄이는가 | `ranges`가 줄이는가 |
+|---------|---------------------------|---------------------|
+| 네트워크 바이트 | ✅ | ✅ |
+| **Google 서버의 셀 스캔 + effective format 계산** | ❌ | ✅ |
+| 클라이언트 파싱 | ✅ (이미 ms 수준) | ✅ |
+
+`fields` 마스크는 **출력 단계**만 좁힘 — Google 서버는 시트 전체(보통 1000행 × 26열 ≈ 26,000셀)를 스캔해 effective format을 계산한 뒤 마스크로 필터링한다. fetch 시간의 큰 부분이 이 **서버 측 CPU 시간**이었음. ranges로 스캔 대상을 ~3,500셀(약 7.4x 감소)로 줄이니 서버 처리 비용이 그만큼 떨어진 것.
+
+요약: **fields = 응답 모양, ranges = 처리 범위**. 비용 축이 다르므로 동시에 적용해야 곱셈으로 줄어듦.
+
+### 위험: 조용한 잘림
+
+매니저가 회차 6+개 또는 주차 11+로 늘려 A1:AI100을 넘으면 학생 화면에서 **에러 없이 누락**됨. 현재는 노출되지 않은 위험으로 — keep 결정 후 M19(파서 옵션 KV 저장) 또는 M20(구분 열 검증) 라인에 **"마지막 행/열에 데이터가 있으면 경고"** 검증을 추가할 것.
+
+향후 parser가 새 필드를 읽기 시작하면 fields 마스크도 같이 늘어나야 함 — 마스크에 없는 필드는 `undefined`로 와서 조용히 깨질 수 있음.
 
 ## 결과
 
 배포 환경, 모바일 시뮬레이션, cache miss 강제 후 측정.
 
-| 지표 | Before (`includeGridData`) | After (`fields` 마스크) | 변화 |
-|------|---------------------------|------------------------|------|
-| `[sheets] fetch` | 9,996 ms | **3,397 ms** | **-66%** |
-| `[sheets] parse` | 1 ms | 15 ms | jitter 범위 |
-| `[sheets] total` | 9,997 ms | **3,414 ms** | **-66%** |
-| Lighthouse FCP | — | 0.5 s | — |
-| Lighthouse Speed Index | 6.1 s | **2.5 s** | -59% |
-| Lighthouse LCP (Core Web Vitals) | 10.46 s (Unscored) | **0.7 s** | scored 진입 |
-| **LCP element render delay** (`div.font-medium`) | 10,460 ms | **3,800 ms** | **-64%** |
-| Lighthouse TBT | — | 0 ms | — |
+| 지표 | Before<br/>(`includeGridData`) | After fields<br/>마스크 | After fields<br/>+ ranges | 누적 변화 |
+|------|--------------------------------|-------------------------|---------------------------|----------|
+| `[sheets] fetch` | 9,996 ms | 3,397 ms | **969 ms** | **-90%** |
+| `[sheets] parse` | 1 ms | 15 ms | 5 ms | jitter |
+| `[sheets] total` | 9,997 ms | 3,414 ms | **974 ms** | **-90%** |
+| Lighthouse FCP | — | 0.5 s | **0.3 s** | — |
+| Lighthouse Speed Index | 6.1 s | 2.5 s | **0.7 s** | **-89%** |
+| Lighthouse LCP | 10.46 s (Unscored) | 0.7 s (셸) / 3.8 s (실측) | **0.4 s** (실측 일치) | **-96%** |
+| LCP element render delay | 10,460 ms | 3,800 ms | (breakdown 미노출) | — |
+| Lighthouse TBT | — | 0 ms | 0 ms | — |
+| Critical path latency | — | — | **924 ms** | — |
 
-**학생이 실제로 시간표를 보는 시점 = element render delay**. 0.7s LCP는 정적 셸의 요소를 픽업한 값이라 UX 지표로는 오해 소지가 있음 — 실측 기준 10.46s → 3.8s, **약 6.6초 단축**.
+**fields 단계까지는 LCP 0.7s(셸)와 element render delay 3.8s(실측)가 갈렸지만, ranges까지 적용한 단계에선 LCP 0.4s가 곧 시간표가 보이는 시점**. 셸/콘텐츠 격차가 사라져 LCP breakdown에 별도 element render delay 항목이 안 나옴.
 
-남은 3.8s는 거의 그대로 Sheets API 외부 지연(3,397ms) — `fields` 마스크로 짤 수 있는 건 다 짠 상태. 추가로 더 줄이려면:
+10.46s → 0.4s, **약 10초 단축**. 추가 최적화(백그라운드 워밍, SWR 등)는 더 이상 우선순위가 아님.
 
-- **ranges 추가** — `fields` 적용 후 빈 셀이 이미 가벼워졌으므로 marginal gain 예상 (셀당 ~500바이트 → ~2~60바이트로 이미 떨어졌기 때문)
-- **백그라운드 워밍 / SWR** — 학생 첫 요청을 cache miss에서 분리. 매니저가 시트 수정 후 revalidate 시 학생이 부담하는 구조를 끊는 방향
-- **ISR (짧은 revalidate)** — 매니저 즉시 반영 요구사항과 충돌해 보류
+### 교훈
 
-학생 UX 기준 3.8s는 여전히 길지만, **10초 → 3.8초는 결정적 개선**. 추가 최적화는 다른 M18.5 항목들 끝낸 뒤 우선순위 재평가.
+성능 분석 시 **"어디서 시간이 가는가"의 모델이 틀리면 잘못된 결정으로 이어진다**. 이 케이스에선 "응답 페이로드 크기"에만 주목해서 ranges를 marginal로 봤지만, 실제로는 Google 서버의 CPU 시간이 더 큰 비중이었음. 가설을 가볍게 세우되 측정으로 항상 검증할 것.
