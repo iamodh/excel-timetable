@@ -61,9 +61,15 @@ export function extractFirstTabSessions(
 
 export const getAllTimetableData = unstable_cache(
   async (): Promise<TimetableData[]> => {
-    console.log("[sheets] fetchTimetableData", new Date().toISOString())
+    const t0 = Date.now()
+    console.log("[sheets] miss start", new Date().toISOString())
     const spreadsheet = await fetchTimetableData()
-    return extractFirstTabSessions(spreadsheet)
+    const tAfterFetch = Date.now()
+    console.log(`[sheets] fetch ${tAfterFetch - t0}ms`)
+    const sessions = extractFirstTabSessions(spreadsheet)
+    console.log(`[sheets] parse ${Date.now() - tAfterFetch}ms`)
+    console.log(`[sheets] total ${Date.now() - t0}ms`)
+    return sessions
   },
   ["timetable"],
   { tags: ["timetable"], revalidate: false },
