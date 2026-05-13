@@ -383,7 +383,7 @@
 **작업 로그**
 
 - [x] Sheets API 응답 슬림화 — `sheets.spreadsheets.get`에 `fields` 마스크 적용해 parser가 실제 사용하는 필드만 수신 (`notes/problem-solving/sheets-fetch-slow-on-cache-miss.md` 참고) → 0b86713
-- [ ] before/after 측정 결과를 노트에 기입 (fetch ms, LCP, Performance 점수) → 노트 "결과" 섹션 작성
+- [x] before/after 측정 결과를 노트에 기입 (fetch ms, LCP, Performance 점수) → 노트 "결과" 섹션 작성 (fetch 9,996→3,397ms, element render delay 10,460→3,800ms)
 - [ ] 관리자 카테고리 매트릭스 선택 행 강조 강화 (더 진한 배경 + 좌측 강조 바 등)
 - [ ] 관리자 카테고리 회차 탭 선택 상태 시인성 점검 (현재 `bg-zinc-800`)
 - [ ] 카테고리 시수 회차별 합계 vs 실제 시트 셀 색상 카운트 직접 대조 — 예외 케이스(병합 누락 자동 보정 셀, tolerance로 합쳐진 색) 포함
