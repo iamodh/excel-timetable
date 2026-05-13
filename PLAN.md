@@ -371,6 +371,28 @@
 
 ---
 
+### Milestone 18.5: 1차 QA 정리 (성능 · UI · 카테고리 점검)
+
+**목표:** M18 마감 직후 누적된 QA 항목을 한 번에 정리한다. 성능 병목 해소, 관리자 UI 손질, 카테고리 시수 정확성 점검.
+
+**배경**
+- 캐시 미스 시 첫 로딩 ~10초 — `includeGridData: true`로 전체 셀/포맷을 끌어와 응답이 수 MB → `notes/problem-solving/sheets-fetch-slow-on-cache-miss.md` 참고
+- 관리자 카테고리 매트릭스에서 선택된 행의 강조가 약함 (`bg-blue-50`) — 토글 상태 인지가 어려움
+- 카테고리 시수가 실제 시트와 정확히 일치하는지 매니저 입회 점검 미실시
+
+**작업 로그**
+
+- [ ] Sheets API 응답 슬림화 — `sheets.spreadsheets.get`에 `fields` 마스크 적용해 parser가 실제 사용하는 필드만 수신 (`notes/problem-solving/sheets-fetch-slow-on-cache-miss.md` 참고)
+- [ ] before/after 측정 결과를 노트에 기입 (fetch ms, LCP, Performance 점수) → 노트 "결과" 섹션 작성
+- [ ] 관리자 카테고리 매트릭스 선택 행 강조 강화 (더 진한 배경 + 좌측 강조 바 등)
+- [ ] 관리자 카테고리 회차 탭 선택 상태 시인성 점검 (현재 `bg-zinc-800`)
+- [ ] 카테고리 시수 회차별 합계 vs 실제 시트 셀 색상 카운트 직접 대조 — 예외 케이스(병합 누락 자동 보정 셀, tolerance로 합쳐진 색) 포함
+- [ ] 카테고리명 일치 점검 — 시트 범례의 카테고리명과 `categoryTargets.ts`의 `NO_TARGET_CATEGORIES` 정확히 일치하는지 확인 (공백/오타)
+
+**완료 조건:** 캐시 미스 시 fetch 시간이 baseline 대비 측정 가능하게 단축됨 + 관리자 UI 토글 상태가 명확히 구분됨 + 카테고리 시수가 실제 시트와 일치함이 확인됨
+
+---
+
 ### Milestone 19: 관리자 파싱 옵션 설정
 
 **목표:** 관리자 페이지에서 파싱 옵션을 설정/저장하고, 적용 시 `revalidateTag("timetable")`로 즉시 반영한다.
