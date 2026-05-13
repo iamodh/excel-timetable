@@ -20,8 +20,12 @@ export async function fetchTimetableData() {
 
   const sheets = google.sheets({ version: "v4", auth })
 
+  // 6열/블록 + 구분열 1 = 7열/블록 × 회차 5~6 + 첫 열 패딩 → 35열 (A~AI)
+  // 1행 패딩 + 4행 헤더 + 9행/주 × 8주 = 77행 → 여유 두고 100행
+  // 매니저가 회차/주차를 늘려 이 범위를 넘으면 학생 화면에서 조용히 잘림 — M19/M20에서 검증 추가 예정
   const response = await sheets.spreadsheets.get({
     spreadsheetId: sheetId,
+    ranges: ["A1:AI100"],
     fields:
       "sheets(data(rowData(values(formattedValue,effectiveFormat(backgroundColor,textFormat(foregroundColor))))),merges)",
   })

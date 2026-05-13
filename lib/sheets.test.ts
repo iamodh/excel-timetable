@@ -39,7 +39,7 @@ describe("fetchTimetableData", () => {
     )
   })
 
-  it("parser가 사용하는 필드만 fields 마스크로 요청하고 includeGridData는 보내지 않는다", async () => {
+  it("parser가 사용하는 필드만 fields 마스크 + 사용 영역만 ranges로 요청하고 includeGridData는 보내지 않는다", async () => {
     vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY", '{"type":"service_account"}')
     vi.stubEnv("GOOGLE_SHEET_ID", "sheet-id-123")
     getMock.mockResolvedValue({ data: { sheets: [] } })
@@ -56,6 +56,7 @@ describe("fetchTimetableData", () => {
     expect(arg.fields).toContain("backgroundColor")
     expect(arg.fields).toContain("foregroundColor")
     expect(arg.fields).toContain("merges")
+    expect(arg.ranges).toEqual(["A1:AI100"])
   })
 })
 
