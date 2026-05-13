@@ -22,7 +22,8 @@ export async function fetchTimetableData() {
 
   const response = await sheets.spreadsheets.get({
     spreadsheetId: sheetId,
-    includeGridData: true,
+    fields:
+      "sheets(data(rowData(values(formattedValue,effectiveFormat(backgroundColor,textFormat(foregroundColor))))),merges)",
   })
 
   return response.data

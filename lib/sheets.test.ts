@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { extractFirstTabSessions } from "./sheets"
 
+const { getMock } = vi.hoisted(() => ({ getMock: vi.fn() }))
+
+vi.mock("googleapis", () => ({
+  google: {
+    auth: { GoogleAuth: class { async getClient() { return {} } } },
+    sheets: () => ({ spreadsheets: { get: getMock } }),
+  },
+}))
+
 describe("fetchTimetableData", () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     vi.resetModules()
+    getMock.mockReset()
   })
 
   it("환경변수 미설정 시 명확한 에러 발생", async () => {
@@ -27,6 +37,25 @@ describe("fetchTimetableData", () => {
     await expect(fetchTimetableData()).rejects.toThrow(
       "GOOGLE_SHEET_ID 환경변수가 설정되지 않았습니다."
     )
+  })
+
+  it("parser가 사용하는 필드만 fields 마스크로 요청하고 includeGridData는 보내지 않는다", async () => {
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY", '{"type":"service_account"}')
+    vi.stubEnv("GOOGLE_SHEET_ID", "sheet-id-123")
+    getMock.mockResolvedValue({ data: { sheets: [] } })
+
+    const { fetchTimetableData } = await import("./sheets")
+    await fetchTimetableData()
+
+    expect(getMock).toHaveBeenCalledOnce()
+    const arg = getMock.mock.calls[0][0]
+    expect(arg.spreadsheetId).toBe("sheet-id-123")
+    expect(arg.includeGridData).toBeUndefined()
+    expect(typeof arg.fields).toBe("string")
+    expect(arg.fields).toContain("formattedValue")
+    expect(arg.fields).toContain("backgroundColor")
+    expect(arg.fields).toContain("foregroundColor")
+    expect(arg.fields).toContain("merges")
   })
 })
 
