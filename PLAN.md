@@ -390,6 +390,7 @@
 - [ ] 관리자 카테고리 회차 탭 선택 상태 시인성 점검 (현재 `bg-zinc-800`)
 - [ ] 카테고리 시수 회차별 합계 vs 실제 시트 셀 색상 카운트 직접 대조 — 예외 케이스(병합 누락 자동 보정 셀, tolerance로 합쳐진 색) 포함
 - [ ] 카테고리명 일치 점검 — 시트 범례의 카테고리명과 `categoryTargets.ts`의 `NO_TARGET_CATEGORIES` 정확히 일치하는지 확인 (공백/오타)
+- [ ] (후순위) `/` 페이지 Suspense 쉘/홀 분리 — 캐시 미스 시 NoticeBanner/GuideLink를 먼저 보여주고 시간표만 스켈레톤. `AuthGate`는 parent wrapper로 유지(redirect 깨짐 방지), 내부에 `<Suspense fallback={<TimetableLoading />}>` 감싸기. fetch 969ms 시대라 효용은 작지만 cold cache UX 개선. 참고: `notes/problem-solving/middleware-blocks-root-caching.md`
 
 **완료 조건:** 캐시 미스 시 fetch 시간이 baseline 대비 측정 가능하게 단축됨 + 관리자 UI 토글 상태가 명확히 구분됨 + 카테고리 시수가 실제 시트와 일치함이 확인됨
 

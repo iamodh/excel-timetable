@@ -75,3 +75,4 @@ npm test         # Vitest 테스트
 - [미들웨어가 `/` 라우트의 캐싱을 막는 문제](notes/problem-solving/middleware-blocks-root-caching.md) — `proxy.ts`의 쿠키 접근이 정적 캐싱을 무효화한 사례
 - [`"use cache"`가 Vercel 인스턴스 간에 공유되지 않는 문제](notes/problem-solving/use-cache-not-shared-on-vercel.md) — process-local LRU의 한계와 `unstable_cache` 전환
 - [색 기반 자동 병합 — 매니저 색칠 실수 보정](notes/problem-solving/auto-merge-from-color.md) — 병합 누락·텍스트 위치·흰색·음영 차이 4가지 패턴 처리
+- [캐시 미스 시 Sheets API 응답이 ~10초로 느린 문제](notes/problem-solving/sheets-fetch-slow-on-cache-miss.md) — `fields` 마스크(응답 모양)와 `ranges`(처리 범위)를 별개 축으로 같이 좁혀 fetch 10s → 1s 단축
