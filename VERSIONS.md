@@ -24,7 +24,7 @@
 - [x] 시간표 홈 페이지(`/`) 카테고리 상단 고정 — 스크롤 시에도 카테고리 영역이 화면 최상단에 유지되도록 sticky 처리 → `f6c532d`
 - [x] 시간표 테이블 UI 수정 — 시간 열 너비 축소로 본문 셀에 더 많은 가로 공간 확보 → `f6c532d`
 - [x] 다크모드 글자 색상 오류 해결 — 다크모드에서 셀/헤더 글자가 배경과 동화되는 케이스 점검 및 수정 → `16c42a4`
-- [ ] `/` 페이지 Suspense 쉘/홀 분리 — `AuthGate`는 parent wrapper로 유지(redirect 깨짐 방지), 내부에 `<Suspense fallback={<TimetableLoading />}>` 를 `<VisibleSessionTabs />` 만 감싸도록 변경. 공지/가이드 링크는 즉시 노출, 시간표 fetch 중에만 로딩 표시. 참고: `notes/problem-solving/middleware-blocks-root-caching.md`
+- [x] `/` 페이지 Suspense 쉘/홀 분리 — `AuthGate`는 parent wrapper로 유지(redirect 깨짐 방지), 내부에 `<Suspense fallback={<TimetableLoading />}>` 를 `<VisibleSessionTabs />` 만 감싸도록 변경. 공지/가이드 링크는 즉시 노출, 시간표 fetch 중에만 로딩 표시. 참고: `notes/problem-solving/middleware-blocks-root-caching.md` → `cde4c3c`
 - [x] Vercel Analytics 통합 — `@vercel/analytics` 패키지 추가 후 `<Analytics />` 컴포넌트를 `app/layout.tsx`에 삽입. 운영 모니터링(방문자/페이지뷰/디바이스 비율) 자동 수집. custom events 미사용. → `a57a60e`
 
 **Manual Tests**
@@ -51,5 +51,6 @@
   - `16c42a4` fix: OS 다크모드에서 글자가 배경과 동화되는 케이스 해결
   - `e8069c6` feat: 공지사항 접기/펼치기 토글 UI
   - `e05588c` revert: 공지사항 토글 UI 롤백 (단일 행 공지로 회귀)
+  - `cde4c3c` feat: / 페이지 Suspense 쉘/홀 분리
 
 ---
