@@ -110,7 +110,7 @@ function CategoryLegend({ categories }: { categories: Category[] }) {
   )
 }
 
-const TIME_COL_WIDTH = 80
+const TIME_COL_WIDTH = 100
 const DAY_COL_WIDTH = 120
 
 function WeekGrid({
