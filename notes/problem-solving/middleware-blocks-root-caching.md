@@ -40,16 +40,22 @@ export const config = {
 4. `getAllTimetableData()`는 `"use cache"` + `cacheTag("timetable")`를 유지한다. 라우트가 동적이어도 이 데이터 함수의 반환값은 별도 Data Cache에 저장된다.
 
 ```tsx
-<Suspense fallback={<TimetableLoading />}>
+<Suspense fallback={null}>            {/* AuthGate 인증 격리 (정적 쉘 보존) */}
   <AuthGate>
-    <NoticeBanner />
-    <VisibleSessionTabs />
-    <GuideLink />
+    <Suspense fallback={null}>         {/* 공지 격리 — 시간표 fetch와 독립 */}
+      <NoticeBanner />
+    </Suspense>
+    <Suspense fallback={<TimetableLoading />}>
+      <VisibleSessionTabs />           {/* 시간표 fetch 중에만 스피너 */}
+    </Suspense>
+    <GuideLink />                       {/* 동기, 즉시 노출 */}
   </AuthGate>
 </Suspense>
 ```
 
 `AuthGate`는 인증 실패 시 children을 렌더하지 않고 `PinRedirect` 같은 클라이언트 이동 컴포넌트를 반환한다. 서버 `redirect()`를 던지지 않는다.
+
+외부 `Suspense`는 `AuthGate`의 `cookies()` 호출을 격리해 정적 쉘이 `◐` Partial Prerender로 보존되게 한다. 내부 `Suspense` 두 개는 `NoticeBanner`와 `VisibleSessionTabs`를 독립적으로 격리해, 시간표 fetch가 공지 fetch에 막히거나 그 반대 케이스에서 한쪽이 다른 쪽을 차단하지 못하게 한다 — 캐시 미스 시에도 공지/가이드 링크는 즉시 노출되고 시간표 영역에만 스피너가 표시된다.
 
 여기서 `<Suspense>`는 fallback UI 도구가 아니라 Next.js에 "이 안쪽은 요청 시점에 실행하는 동적 경계"라고 선언하는 **표지판**이다. fallback은 부수 효과일 뿐, 핵심 역할은 동적/정적 경계 선언. Suspense 없이 페이지 본문에서 `cookies()`가 호출되면 그 선언이 페이지 전체로 번져 정적 prerender가 깨진다.
 
