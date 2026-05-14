@@ -96,7 +96,7 @@ function CategoryLegend({ categories }: { categories: Category[] }) {
   if (categories.length === 0) return null
 
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div className="sticky top-0 z-30 mb-4 flex flex-wrap gap-2 bg-zinc-50 py-2">
       {categories.map((cat) => (
         <span
           key={cat.name}
@@ -110,7 +110,8 @@ function CategoryLegend({ categories }: { categories: Category[] }) {
   )
 }
 
-const COL_WIDTH = 120
+const TIME_COL_WIDTH = 80
+const DAY_COL_WIDTH = 120
 
 function WeekGrid({
   week,
@@ -122,7 +123,7 @@ function WeekGrid({
   highlightCategory?: string
 }) {
   const timeSlots = week.days[0]?.slots ?? []
-  const tableWidth = (week.days.length + 1) * COL_WIDTH
+  const tableWidth = TIME_COL_WIDTH + week.days.length * DAY_COL_WIDTH
 
   return (
     <div className="mb-6">
@@ -133,9 +134,9 @@ function WeekGrid({
           style={{ tableLayout: "fixed", width: tableWidth }}
         >
           <colgroup>
-            <col style={{ width: COL_WIDTH }} />
+            <col style={{ width: TIME_COL_WIDTH }} />
             {week.days.map((day) => (
-              <col key={day.date} style={{ width: COL_WIDTH }} />
+              <col key={day.date} style={{ width: DAY_COL_WIDTH }} />
             ))}
           </colgroup>
           <thead>
