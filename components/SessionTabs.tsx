@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
@@ -16,6 +16,14 @@ export function SessionTabs({
   const [current, setCurrent] = useState(() =>
     determineCurrentSession(visibleSessions)
   )
+  const navRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+    nav.scrollLeft = nav.scrollWidth
+  }, [])
+
   const data = visibleSessions[current]
 
   if (!data) {
@@ -28,7 +36,7 @@ export function SessionTabs({
 
   return (
     <>
-      <nav className="mb-4 flex gap-2 overflow-x-auto">
+      <nav ref={navRef} className="mb-4 flex gap-2 overflow-x-auto">
         {visibleSessions.map((s, i) => (
           <button
             key={i}
