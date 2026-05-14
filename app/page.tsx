@@ -3,20 +3,13 @@ import Link from "next/link"
 import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { AuthGate } from "@/components/AuthGate"
+import { NoticeToggle } from "@/components/NoticeToggle"
 import { getNotice } from "@/lib/notice"
 
 async function NoticeBanner() {
   const notice = await getNotice()
   if (!notice) return null
-  return (
-    <div className="max-w-4xl mx-auto mb-4 bg-amber-50 border border-amber-200 border-l-4 border-l-amber-400 rounded p-3">
-      <p className="text-sm text-zinc-800">
-        <span className="mr-1.5">📢</span>
-        <span className="font-semibold text-amber-700 mr-2">공지</span>
-        {notice}
-      </p>
-    </div>
-  )
+  return <NoticeToggle notice={notice} />
 }
 
 async function VisibleSessionTabs() {
