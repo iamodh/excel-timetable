@@ -56,10 +56,14 @@ function TimetableLoading() {
 export default function TimetablePage() {
   return (
     <div className="min-h-screen bg-zinc-50 p-4">
-      <Suspense fallback={<TimetableLoading />}>
+      <Suspense fallback={null}>
         <AuthGate>
-          <NoticeBanner />
-          <VisibleSessionTabs />
+          <Suspense fallback={null}>
+            <NoticeBanner />
+          </Suspense>
+          <Suspense fallback={<TimetableLoading />}>
+            <VisibleSessionTabs />
+          </Suspense>
           <div className="max-w-4xl mx-auto mt-6 pb-4 text-center">
             <Link
               href="/guide"
