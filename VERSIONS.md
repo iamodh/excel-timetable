@@ -21,8 +21,8 @@
 - [x] 프로젝트 메타데이터 수정 — `app/layout.tsx`의 `metadata.title`/`description`을 프로젝트명에 맞게 변경, `<html lang>`도 `ko`로 변경 → `a4b4c87`
 - [x] favicon 교체 — create-next-app 기본 아이콘에서 프로젝트 아이콘으로 교체 (`app/icon.svg` + `app/apple-icon.png`) → `721ed98`
 - [x] 회차 선택 버튼 스크롤 초기 위치 — 가장 오른쪽(최신 회차)에서 시작하도록 초기 스크롤 위치 조정 → `d5f347b`
-- [ ] 시간표 홈 페이지(`/`) 카테고리 상단 고정 — 스크롤 시에도 카테고리 영역이 화면 최상단에 유지되도록 sticky 처리
-- [ ] 시간표 테이블 UI 수정 — 시간 열 너비 축소로 본문 셀에 더 많은 가로 공간 확보
+- [x] 시간표 홈 페이지(`/`) 카테고리 상단 고정 — 스크롤 시에도 카테고리 영역이 화면 최상단에 유지되도록 sticky 처리 → `f6c532d`
+- [x] 시간표 테이블 UI 수정 — 시간 열 너비 축소로 본문 셀에 더 많은 가로 공간 확보 → `f6c532d`
 - [ ] 다크모드 글자 색상 오류 해결 — 다크모드에서 셀/헤더 글자가 배경과 동화되는 케이스 점검 및 수정
 - [ ] 공지사항 토글 UI — 기존 KV 기반 공지 시스템은 그대로 두고, 학생 화면의 공지 영역만 접기/펼치기 토글로 변경. 버전별 변경 사항은 매니저가 관리자 페이지의 공지 input에 직접 복붙해 작성
 - [ ] `/` 페이지 Suspense 쉘/홀 분리 — `AuthGate`는 parent wrapper로 유지(redirect 깨짐 방지), 내부에 `<Suspense fallback={<TimetableLoading />}>` 를 `<VisibleSessionTabs />` 만 감싸도록 변경. 공지/가이드 링크는 즉시 노출, 시간표 fetch 중에만 로딩 표시. 참고: `notes/problem-solving/middleware-blocks-root-caching.md`
@@ -48,5 +48,6 @@
   - `a847691` chore: favicon.ico 추가 (Safari/구형 브라우저 호환)
   - `a57a60e` feat: Vercel Analytics 통합
   - `d5f347b` feat: 회차 선택 nav 초기 스크롤을 가장 오른쪽으로 이동
+  - `f6c532d` feat: 카테고리 범례 sticky 처리 + 시간 열 너비 축소
 
 ---
