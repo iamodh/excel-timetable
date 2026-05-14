@@ -26,6 +26,7 @@
 - [ ] 다크모드 글자 색상 오류 해결 — 다크모드에서 셀/헤더 글자가 배경과 동화되는 케이스 점검 및 수정
 - [ ] 공지사항 토글 UI — 기존 KV 기반 공지 시스템은 그대로 두고, 학생 화면의 공지 영역만 접기/펼치기 토글로 변경. 버전별 변경 사항은 매니저가 관리자 페이지의 공지 input에 직접 복붙해 작성
 - [ ] `/` 페이지 Suspense 쉘/홀 분리 — `AuthGate`는 parent wrapper로 유지(redirect 깨짐 방지), 내부에 `<Suspense fallback={<TimetableLoading />}>` 를 `<VisibleSessionTabs />` 만 감싸도록 변경. 공지/가이드 링크는 즉시 노출, 시간표 fetch 중에만 로딩 표시. 참고: `notes/problem-solving/middleware-blocks-root-caching.md`
+- [x] Vercel Analytics 통합 — `@vercel/analytics` 패키지 추가 후 `<Analytics />` 컴포넌트를 `app/layout.tsx`에 삽입. 운영 모니터링(방문자/페이지뷰/디바이스 비율) 자동 수집. custom events 미사용. → `a57a60e`
 
 **Manual Tests**
 
@@ -37,11 +38,14 @@
 - [ ] OS 다크모드에서 시간표/카테고리/공지 글자가 모두 가독성 있게 표시됨
 - [ ] 공지사항 영역 클릭 시 접기/펼치기 동작, 펼친 상태에서 v1.1 변경 사항 텍스트가 표시됨
 - [ ] 캐시 미스 시 공지/가이드 링크는 즉시 노출되고, 시간표 영역만 로딩 스피너가 표시됨
+- [ ] 배포 후 Vercel Analytics 대시보드에서 페이지뷰가 수집됨 (방문자 0이 아님 확인)
 
 **완료 조건:** 위 개선 항목이 배포 환경에서 정상 동작하고, 기존 기능(회차 전환, PIN, 관리자 페이지)이 회귀 없이 동작함
 
 - Commits:
   - `a4b4c87` chore: 메타데이터를 프로젝트 정보로 변경
   - `721ed98` chore: favicon을 프로젝트 아이콘으로 교체
+  - `a847691` chore: favicon.ico 추가 (Safari/구형 브라우저 호환)
+  - `a57a60e` feat: Vercel Analytics 통합
 
 ---
