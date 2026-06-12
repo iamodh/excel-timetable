@@ -1,11 +1,29 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import { determineCurrentSession, filterVisibleSessions } from "./session"
-import type { TimetableData } from "./parser"
+import type { TimetableData, Slot } from "./parser"
 
-function makeSession(dates: string[]): TimetableData {
+function makeSlot(title: string): Slot {
   return {
-    programName: "테스트",
-    period: "",
+    startTime: "10:00",
+    endTime: "11:00",
+    title,
+    subtitle: null,
+    bgColor: "#ffffff",
+    textColor: "#000000",
+    rowSpan: 1,
+    isMergedContinuation: false,
+  }
+}
+
+function makeSession(
+  dates: string[],
+  period = "",
+  programName = "테스트",
+  emptyDates: string[] = [],
+): TimetableData {
+  return {
+    programName,
+    period,
     location: "",
     totalHours: "",
     categories: [],
@@ -15,7 +33,8 @@ function makeSession(dates: string[]): TimetableData {
         days: dates.map((date) => ({
           dayOfWeek: "월",
           date,
-          slots: [],
+          // 실제 파서는 빈 칸도 title이 빈 문자열인 슬롯으로 만든다
+          slots: [makeSlot(emptyDates.includes(date) ? "" : "수업")],
         })),
       },
     ],
@@ -52,7 +71,7 @@ describe("determineCurrentSession", () => {
     expect(determineCurrentSession(sessions)).toBe(0)
   })
 
-  it("교육 기간 외 접속 시 첫 번째 회차(0)를 반환한다", () => {
+  it("어느 회차 범위에도 속하지 않으면(회차 사이 공백, 교육 종료 후) 마지막 회차를 반환한다", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 11, 25)) // 2026-12-25
 
@@ -61,7 +80,7 @@ describe("determineCurrentSession", () => {
       makeSession(["4/14", "4/15", "4/16", "4/17", "4/20"]),
     ]
 
-    expect(determineCurrentSession(sessions)).toBe(0)
+    expect(determineCurrentSession(sessions)).toBe(1)
   })
 
   it("빈 sessions 배열이면 0을 반환한다", () => {
@@ -81,7 +100,65 @@ describe("filterVisibleSessions", () => {
     }
   }
 
-  it("오늘 기준 period 시작일이 미래인 회차는 제외하고 과거·현재 회차만 남긴다", () => {
+  it("직전 회차의 마지막 날짜가 지나면 다음 회차가 바로 보인다", () => {
+    const sessions = [
+      makeSession(["6/1", "6/5", "6/10"], "2026.06.01 ~ 2026.06.10", "1회차"),
+      makeSession(["6/20", "6/24", "6/30"], "2026.06.20 ~ 2026.06.30", "2회차"),
+    ]
+    const today = new Date(2026, 5, 11) // 1회차 종료 다음 날, 2회차 시작 전 공백 기간
+
+    expect(filterVisibleSessions(sessions, today).map((s) => s.programName)).toEqual([
+      "1회차",
+      "2회차",
+    ])
+  })
+
+  it("직전 회차의 마지막 날짜 당일까지는 다음 회차를 숨긴다", () => {
+    const sessions = [
+      makeSession(["6/1", "6/5", "6/10"], "2026.06.01 ~ 2026.06.10", "1회차"),
+      makeSession(["6/20", "6/24", "6/30"], "2026.06.20 ~ 2026.06.30", "2회차"),
+    ]
+    const today = new Date(2026, 5, 10) // 1회차 마지막 날 당일
+
+    expect(filterVisibleSessions(sessions, today).map((s) => s.programName)).toEqual([
+      "1회차",
+    ])
+  })
+
+  it("수업 없는 날짜 헤더는 범위에서 제외한다 — 마지막 수업일 다음 날부터 다음 회차가 보인다", () => {
+    // 실제 시트는 회차 마지막 주에 수업 없는 날짜 헤더가 남는다 (예: 마지막 수업 6/10, 헤더는 6/15까지)
+    const sessions = [
+      makeSession(
+        ["6/8", "6/9", "6/10", "6/11", "6/12", "6/15"],
+        "2026.05.12 ~ 2026.06.15",
+        "3회차",
+        ["6/11", "6/12", "6/15"],
+      ),
+      makeSession(["6/16", "6/17"], "2026.06.16 ~ 2026.07.20", "4회차"),
+    ]
+
+    const onLastClassDay = filterVisibleSessions(sessions, new Date(2026, 5, 10)) // 6/10
+    expect(onLastClassDay.map((s) => s.programName)).toEqual(["3회차"])
+
+    const afterLastClassDay = filterVisibleSessions(sessions, new Date(2026, 5, 11)) // 6/11
+    expect(afterLastClassDay.map((s) => s.programName)).toEqual(["3회차", "4회차"])
+  })
+
+  it("해를 넘기는 회차는 period 연도로 보정해 마지막 날짜를 계산한다", () => {
+    // 보정 없으면 1/4, 1/5가 2026년으로 계산되어 마지막 날짜가 12/29가 되고 2회차가 미리 보인다
+    const sessions = [
+      makeSession(["12/28", "12/29", "1/4", "1/5"], "2026.12.28 ~ 2027.01.05", "1회차"),
+      makeSession(["1/12", "1/16"], "2027.01.12 ~ 2027.01.16", "2회차"),
+    ]
+
+    const during = filterVisibleSessions(sessions, new Date(2027, 0, 4)) // 2027-01-04
+    expect(during.map((s) => s.programName)).toEqual(["1회차"])
+
+    const after = filterVisibleSessions(sessions, new Date(2027, 0, 6)) // 2027-01-06
+    expect(after.map((s) => s.programName)).toEqual(["1회차", "2회차"])
+  })
+
+  it("그리드 날짜가 없는 회차는 period 시작일 기준으로 노출을 판단한다 (폴백)", () => {
     const sessions = [
       makeSessionWithPeriod("2026.01.05 ~ 2026.02.08", "1회차"), // 과거
       makeSessionWithPeriod("2026.04.07 ~ 2026.05.11", "2회차"), // 시작됨 (현재)
