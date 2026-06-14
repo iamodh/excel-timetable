@@ -105,6 +105,7 @@ export interface Slot {
   textColor: string
   rowSpan: number
   isMergedContinuation: boolean
+  venue: string | null // 보조 테이블의 장소/강사 자유 텍스트 (없으면 null)
 }
 
 function parseTimeRange(timeLabel: string): { startTime: string; endTime: string } {
@@ -132,6 +133,7 @@ export function parseGridSlots(rowData: RowData[]): Slot[][] {
         textColor: toTextColor(cell.effectiveFormat?.textFormat?.foregroundColor),
         rowSpan: 1,
         isMergedContinuation: false,
+        venue: null,
       }
     })
   })
@@ -251,9 +253,51 @@ export function parseSessionBlocks(rowData: RowData[], merges: MergeRange[]): Ti
   return sessions
 }
 
+// 보조 테이블: 블록 내 본 그리드 아래에 위치. 0열=날짜(M/D), 헤더 행의 1열~ = 시작 시간("HH:MM"),
+// 데이터 행 = 그 (날짜 × 시작 시간)에 시작하는 수업의 장소/강사 텍스트.
+// 조회 키는 본 그리드 Slot의 date·startTime과 동일한 표기를 쓴다.
+const START_TIME_RE = /^\d{1,2}:\d{2}$/
+
+export type VenueLookup = Record<string, string>
+
+export function venueKey(date: string, startTime: string): string {
+  return `${date}|${startTime}`
+}
+
+export function parseAuxTable(rowData: RowData[]): VenueLookup {
+  const lookup: VenueLookup = {}
+
+  // 헤더 행: 1열 이후에 범위가 아닌 단독 시작 시간("13:00")이 있는 첫 행 (본 그리드 시간 라벨은 "~" 포함)
+  const headerIdx = rowData.findIndex((row) =>
+    (row.values ?? []).slice(1).some((c) => START_TIME_RE.test(c?.formattedValue ?? "")),
+  )
+  if (headerIdx === -1) return lookup
+
+  // 열 위치 하드코딩 대신 헤더에서 (열 인덱스 → 시작 시간)을 읽는다
+  const headerCells = rowData[headerIdx].values ?? []
+  const timeCols: { col: number; time: string }[] = []
+  for (let c = 1; c < headerCells.length; c++) {
+    const time = headerCells[c]?.formattedValue ?? ""
+    if (START_TIME_RE.test(time)) timeCols.push({ col: c, time })
+  }
+
+  for (let r = headerIdx + 1; r < rowData.length; r++) {
+    const cells = rowData[r].values ?? []
+    const date = cells[0]?.formattedValue ?? ""
+    if (!date) continue
+    for (const { col, time } of timeCols) {
+      const text = cells[col]?.formattedValue ?? ""
+      if (text) lookup[venueKey(date, time)] = text
+    }
+  }
+
+  return lookup
+}
+
 export function parseTimetable(rowData: RowData[], merges: MergeRange[]): TimetableData {
   const categories = parseCategories(rowData.slice(0, 2))
   const header = parseHeader(rowData.slice(2, 4))
+  const venueLookup = parseAuxTable(rowData)
   const gridRows = rowData.slice(GRID_START)
 
   const weeks: Week[] = []
@@ -282,7 +326,10 @@ export function parseTimetable(rowData: RowData[], merges: MergeRange[]): Timeta
     const days: Day[] = weekHeader.days.map((dh, colIdx) => ({
       dayOfWeek: dh.dayOfWeek,
       date: dh.date,
-      slots: grid.map((row) => row[colIdx]),
+      slots: grid.map((row) => {
+        const slot = row[colIdx]
+        return { ...slot, venue: venueLookup[venueKey(dh.date, slot.startTime)] ?? null }
+      }),
     }))
 
     weeks.push({ weekNumber: weekHeader.weekNumber, days })

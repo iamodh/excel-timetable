@@ -37,6 +37,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 2,
                     isMergedContinuation: false,
+                    venue: null,
                   },
                   {
                     startTime: "10:00",
@@ -47,6 +48,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 1,
                     isMergedContinuation: true,
+                    venue: null,
                   },
                   {
                     startTime: "11:00",
@@ -57,6 +59,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 1,
                     isMergedContinuation: false,
+                    venue: null,
                   },
                 ],
               },
@@ -82,6 +85,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 3,
                     isMergedContinuation: false,
+                    venue: null,
                   },
                   {
                     startTime: "10:00",
@@ -92,6 +96,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 1,
                     isMergedContinuation: true,
+                    venue: null,
                   },
                   {
                     startTime: "11:00",
@@ -102,6 +107,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 1,
                     isMergedContinuation: true,
+                    venue: null,
                   },
                   {
                     startTime: "12:00",
@@ -112,6 +118,7 @@ describe("summarizeCategoryHoursBySession", () => {
                     textColor: "#000000",
                     rowSpan: 1,
                     isMergedContinuation: false,
+                    venue: null,
                   },
                 ],
               },

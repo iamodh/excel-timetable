@@ -12,6 +12,7 @@ function makeSlot(title: string): Slot {
     textColor: "#000000",
     rowSpan: 1,
     isMergedContinuation: false,
+    venue: null,
   }
 }
 

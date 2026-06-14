@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { applyMerges, applyImplicitMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks } from "./parser"
+import { applyMerges, applyImplicitMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks, parseAuxTable, venueKey } from "./parser"
 
 describe("parseCategories", () => {
   it("범례 행에서 카테고리명과 배경색을 추출한다", () => {
@@ -488,6 +488,10 @@ describe("parseTimetable", () => {
       { values: [{ formattedValue: "14:00~15:00" }, {}, {}] },
       { values: [{ formattedValue: "15:00~16:00" }, {}, {}] },
       { values: [{ formattedValue: "16:00~17:00" }, {}, {}] },
+      // 보조 테이블: 헤더(시작 시간) + 날짜행. 4/7은 09:00만, 4/8은 10:00만 채워짐.
+      { values: [{}, { formattedValue: "09:00" }, { formattedValue: "10:00" }] },
+      { values: [{ formattedValue: "4/7" }, { formattedValue: "장유출장소/허은진" }, {}] },
+      { values: [{ formattedValue: "4/8" }, {}, { formattedValue: "김해대/박재희" }] },
     ]
 
     const merges = [
@@ -531,5 +535,43 @@ describe("parseTimetable", () => {
     // 두 번째 요일
     expect(result.weeks[0].days[1].slots[1].title).toBe("사례관리")
     expect(result.weeks[0].days[1].slots[1].bgColor).toBe("#f5a661")
+
+    // 보조 테이블 매칭: 날짜 + 시작 시간으로 슬롯에 장소/강사 부착, 없으면 null
+    expect(result.weeks[0].days[0].slots[0].venue).toBe("장유출장소/허은진") // 4/7 09:00
+    expect(result.weeks[0].days[0].slots[1].venue).toBeNull() // 4/7 10:00 미입력
+    expect(result.weeks[0].days[1].slots[1].venue).toBe("김해대/박재희") // 4/8 10:00
+    expect(result.weeks[0].days[1].slots[0].venue).toBeNull() // 4/8 09:00 미입력
+  })
+})
+
+describe("parseAuxTable", () => {
+  it("헤더의 시작 시간으로 열을 매칭해 (날짜 × 시작 시간) → 장소/강사 조회 테이블을 만든다", () => {
+    // 0열=날짜, 헤더(1열~)=시작 시간. 14:00 열은 비고 13:00/15:00 수업만 채워진 형태(2시간 수업).
+    const cell = (v: string) => ({ formattedValue: v })
+    const rowData = [
+      { values: [{}, cell("13:00"), cell("14:00"), cell("15:00"), cell("16:00")] },
+      { values: [cell("3/10"), cell("장유출장소/허은진"), {}, cell("장유출장소/이주화"), {}] },
+      { values: [cell("3/11"), cell("김해시서부보건소/"), {}, {}, cell("장유출장소/안재호")] },
+    ]
+
+    const lookup = parseAuxTable(rowData)
+
+    expect(lookup[venueKey("3/10", "13:00")]).toBe("장유출장소/허은진")
+    expect(lookup[venueKey("3/10", "15:00")]).toBe("장유출장소/이주화")
+    expect(lookup[venueKey("3/11", "13:00")]).toBe("김해시서부보건소/")
+    expect(lookup[venueKey("3/11", "16:00")]).toBe("장유출장소/안재호")
+    // 빈 칸은 키 자체가 없다 (조회 시 undefined)
+    expect(lookup[venueKey("3/10", "14:00")]).toBeUndefined()
+    expect(lookup[venueKey("3/11", "14:00")]).toBeUndefined()
+  })
+
+  it("보조 테이블이 없으면(시작 시간 헤더 없음) 빈 조회 테이블을 반환한다", () => {
+    const cell = (v: string) => ({ formattedValue: v })
+    // 본 그리드 시간 라벨은 0열에 "~" 포함 범위로만 있어 헤더로 인식되지 않는다
+    const rowData = [
+      { values: [cell("13:00~14:00"), cell("기초상담"), cell("사례관리")] },
+    ]
+
+    expect(parseAuxTable(rowData)).toEqual({})
   })
 })
