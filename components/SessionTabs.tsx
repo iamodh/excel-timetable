@@ -16,6 +16,7 @@ export function SessionTabs({
   const [current, setCurrent] = useState(() =>
     determineCurrentSession(visibleSessions)
   )
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -53,7 +54,12 @@ export function SessionTabs({
       </nav>
       <TimetableHeader data={data} />
       <CategoryLegend categories={data.categories} />
-      <TimetableGrid data={data} highlightCategory={highlightCategory} />
+      <TimetableGrid
+        data={data}
+        highlightCategory={highlightCategory}
+        onSelectSlot={setSelectedSlot}
+      />
+      <VenueSheet slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
     </>
   )
 }
@@ -61,9 +67,11 @@ export function SessionTabs({
 export function TimetableGrid({
   data,
   highlightCategory,
+  onSelectSlot,
 }: {
   data: TimetableData
   highlightCategory?: string
+  onSelectSlot?: (slot: Slot) => void
 }) {
   return (
     <>
@@ -73,6 +81,7 @@ export function TimetableGrid({
           week={week}
           categories={data.categories}
           highlightCategory={highlightCategory}
+          onSelectSlot={onSelectSlot}
         />
       ))}
     </>
@@ -117,10 +126,12 @@ function WeekGrid({
   week,
   categories,
   highlightCategory,
+  onSelectSlot,
 }: {
   week: Week
   categories: Category[]
   highlightCategory?: string
+  onSelectSlot?: (slot: Slot) => void
 }) {
   const timeSlots = week.days[0]?.slots ?? []
   const tableWidth = TIME_COL_WIDTH + week.days.length * DAY_COL_WIDTH
@@ -166,6 +177,7 @@ function WeekGrid({
                       slot={slot}
                       categories={categories}
                       highlightCategory={highlightCategory}
+                      onSelectSlot={onSelectSlot}
                     />
                   )
                 })}
@@ -182,10 +194,12 @@ function SlotCell({
   slot,
   categories,
   highlightCategory,
+  onSelectSlot,
 }: {
   slot: Slot
   categories: Category[]
   highlightCategory?: string
+  onSelectSlot?: (slot: Slot) => void
 }) {
   const isEmpty = !slot.title
   const isDimmed = !isEmpty && shouldDimSlotForCategory(
@@ -193,17 +207,20 @@ function SlotCell({
     categories,
     highlightCategory
   )
+  const isClickable = !!slot.venue && !!onSelectSlot
 
   return (
     <td
-      className="border border-zinc-200 px-2 py-2 text-center"
+      className={`border border-zinc-200 px-2 py-2 text-center ${isClickable ? "cursor-pointer" : ""}`}
       rowSpan={slot.rowSpan > 1 ? slot.rowSpan : undefined}
       style={!isEmpty ? { backgroundColor: isDimmed ? "#f4f4f5" : slot.bgColor } : undefined}
+      onClick={isClickable ? () => onSelectSlot!(slot) : undefined}
     >
       {slot.title && (
         <>
           <div className="font-medium" style={{ color: isDimmed ? "#71717a" : slot.textColor }}>
             {slot.title}
+            {isClickable && <span className="ml-1 text-xs opacity-70">📍</span>}
           </div>
           {slot.subtitle && (
             <div className={`mt-0.5 ${isDimmed ? "text-zinc-400" : "text-zinc-600"}`}>{slot.subtitle}</div>
@@ -211,5 +228,43 @@ function SlotCell({
         </>
       )}
     </td>
+  )
+}
+
+function VenueSheet({
+  slot,
+  onClose,
+}: {
+  slot: Slot | null
+  onClose: () => void
+}) {
+  if (!slot) return null
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-x-0 bottom-0 z-50 animate-[slideUp_0.2s_ease-out] rounded-t-2xl bg-white p-5 shadow-2xl">
+        <div className="mx-auto max-w-md">
+          <div className="text-sm text-zinc-500">
+            {slot.startTime}~{slot.endTime}
+          </div>
+          <div className="mt-1 text-lg font-bold">{slot.title}</div>
+          {slot.subtitle && (
+            <div className="mt-0.5 text-sm text-zinc-600">{slot.subtitle}</div>
+          )}
+          <div className="my-4 border-t border-zinc-200" />
+          <div className="flex items-start gap-2 text-zinc-800">
+            <span aria-hidden>📍</span>
+            <span className="whitespace-pre-wrap break-words">{slot.venue}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-lg bg-zinc-800 py-2.5 text-sm font-medium text-white"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
