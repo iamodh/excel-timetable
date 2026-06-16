@@ -5,6 +5,8 @@ import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
 
+type SelectedSlot = { slot: Slot; date: string; dayOfWeek: string }
+
 export function SessionTabs({
   sessions,
   highlightCategory,
@@ -16,7 +18,7 @@ export function SessionTabs({
   const [current, setCurrent] = useState(() =>
     determineCurrentSession(visibleSessions)
   )
-  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
+  const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null)
   const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function SessionTabs({
         highlightCategory={highlightCategory}
         onSelectSlot={setSelectedSlot}
       />
-      <VenueSheet slot={selectedSlot} onClose={() => setSelectedSlot(null)} />
+      <VenueSheet selected={selectedSlot} onClose={() => setSelectedSlot(null)} />
     </>
   )
 }
@@ -71,7 +73,7 @@ export function TimetableGrid({
 }: {
   data: TimetableData
   highlightCategory?: string
-  onSelectSlot?: (slot: Slot) => void
+  onSelectSlot?: (selected: SelectedSlot) => void
 }) {
   return (
     <>
@@ -131,7 +133,7 @@ function WeekGrid({
   week: Week
   categories: Category[]
   highlightCategory?: string
-  onSelectSlot?: (slot: Slot) => void
+  onSelectSlot?: (selected: SelectedSlot) => void
 }) {
   const timeSlots = week.days[0]?.slots ?? []
   const tableWidth = TIME_COL_WIDTH + week.days.length * DAY_COL_WIDTH
@@ -175,6 +177,8 @@ function WeekGrid({
                     <SlotCell
                       key={day.date}
                       slot={slot}
+                      date={day.date}
+                      dayOfWeek={day.dayOfWeek}
                       categories={categories}
                       highlightCategory={highlightCategory}
                       onSelectSlot={onSelectSlot}
@@ -192,14 +196,18 @@ function WeekGrid({
 
 function SlotCell({
   slot,
+  date,
+  dayOfWeek,
   categories,
   highlightCategory,
   onSelectSlot,
 }: {
   slot: Slot
+  date: string
+  dayOfWeek: string
   categories: Category[]
   highlightCategory?: string
-  onSelectSlot?: (slot: Slot) => void
+  onSelectSlot?: (selected: SelectedSlot) => void
 }) {
   const isEmpty = !slot.title
   const isDimmed = !isEmpty && shouldDimSlotForCategory(
@@ -214,7 +222,7 @@ function SlotCell({
       className={`border border-zinc-200 px-2 py-2 text-center ${isClickable ? "cursor-pointer" : ""}`}
       rowSpan={slot.rowSpan > 1 ? slot.rowSpan : undefined}
       style={!isEmpty ? { backgroundColor: isDimmed ? "#f4f4f5" : slot.bgColor } : undefined}
-      onClick={isClickable ? () => onSelectSlot!(slot) : undefined}
+      onClick={isClickable ? () => onSelectSlot!({ slot, date, dayOfWeek }) : undefined}
     >
       {slot.title && (
         <>
@@ -232,13 +240,15 @@ function SlotCell({
 }
 
 function VenueSheet({
-  slot,
+  selected,
   onClose,
 }: {
-  slot: Slot | null
+  selected: SelectedSlot | null
   onClose: () => void
 }) {
-  if (!slot) return null
+  if (!selected) return null
+
+  const { slot, date, dayOfWeek } = selected
 
   return (
     <>
@@ -246,7 +256,7 @@ function VenueSheet({
       <div className="fixed inset-x-0 bottom-0 z-50 animate-[slideUp_0.2s_ease-out] rounded-t-2xl bg-white p-5 shadow-2xl">
         <div className="mx-auto max-w-md">
           <div className="text-sm text-zinc-500">
-            {slot.startTime}~{slot.endTime}
+            {date}({dayOfWeek}) {slot.startTime}
           </div>
           <div className="mt-1 text-lg font-bold">{slot.title}</div>
           {slot.subtitle && (
