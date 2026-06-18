@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { determineCurrentSession, filterVisibleSessions } from "./session"
-import type { TimetableData, Slot } from "./parser"
+import { determineCurrentSession, filterVisibleSessions, partitionWeeksByRecency } from "./session"
+import type { TimetableData, Slot, Week } from "./parser"
 
 function makeSlot(title: string): Slot {
   return {
@@ -180,5 +180,55 @@ describe("filterVisibleSessions", () => {
     const today = new Date(2026, 3, 22) // 2026-04-22
 
     expect(filterVisibleSessions(sessions, today)).toEqual([])
+  })
+})
+
+describe("partitionWeeksByRecency", () => {
+  function makeWeek(weekNumber: number, dates: string[]): Week {
+    return {
+      weekNumber,
+      days: dates.map((date) => ({
+        dayOfWeek: "월",
+        date,
+        slots: [makeSlot("수업")],
+      })),
+    }
+  }
+
+  function makeSessionWeeks(weeks: Week[], period = ""): TimetableData {
+    return {
+      programName: "테스트",
+      period,
+      location: "",
+      totalHours: "",
+      categories: [],
+      weeks,
+    }
+  }
+
+  it("마지막 수업일이 지난 주차는 past로, 안 지난 주차는 upcoming으로 분리하고 각 그룹은 주차 오름차순을 유지한다", () => {
+    const session = makeSessionWeeks([
+      makeWeek(1, ["6/2", "6/6"]),
+      makeWeek(2, ["6/9", "6/13"]),
+      makeWeek(3, ["6/16", "6/20"]),
+      makeWeek(4, ["6/23", "6/27"]),
+    ])
+    const today = new Date(2026, 5, 15) // 2주차 마지막(6/13) 지남, 3주차(6/16~) 안 지남
+
+    const { upcoming, past } = partitionWeeksByRecency(session, today)
+    expect(upcoming.map((w) => w.weekNumber)).toEqual([3, 4])
+    expect(past.map((w) => w.weekNumber)).toEqual([1, 2])
+  })
+
+  it("마지막 수업일 당일에는 해당 주차가 past로 가지 않는다", () => {
+    const session = makeSessionWeeks([
+      makeWeek(1, ["6/2", "6/6"]),
+      makeWeek(2, ["6/9", "6/13"]),
+    ])
+    const today = new Date(2026, 5, 6) // 1주차 마지막 수업일(6/6) 당일
+
+    const { upcoming, past } = partitionWeeksByRecency(session, today)
+    expect(upcoming.map((w) => w.weekNumber)).toEqual([1, 2])
+    expect(past).toEqual([])
   })
 })

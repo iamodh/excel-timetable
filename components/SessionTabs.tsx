@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
-import { determineCurrentSession, filterVisibleSessions } from "@/lib/session"
+import {
+  determineCurrentSession,
+  filterVisibleSessions,
+  partitionWeeksByRecency,
+} from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
 
 type SelectedSlot = { slot: Slot; date: string; dayOfWeek: string }
@@ -75,18 +79,34 @@ export function TimetableGrid({
   highlightCategory?: string
   onSelectSlot?: (selected: SelectedSlot) => void
 }) {
+  const { upcoming, past } = partitionWeeksByRecency(data, new Date())
+
+  const renderWeek = (week: Week) => (
+    <WeekGrid
+      key={week.weekNumber}
+      week={week}
+      categories={data.categories}
+      highlightCategory={highlightCategory}
+      onSelectSlot={onSelectSlot}
+    />
+  )
+
   return (
     <>
-      {data.weeks.map((week) => (
-        <WeekGrid
-          key={week.weekNumber}
-          week={week}
-          categories={data.categories}
-          highlightCategory={highlightCategory}
-          onSelectSlot={onSelectSlot}
-        />
-      ))}
+      {upcoming.map(renderWeek)}
+      {upcoming.length > 0 && past.length > 0 && <PastWeeksDivider />}
+      {past.map(renderWeek)}
     </>
+  )
+}
+
+function PastWeeksDivider() {
+  return (
+    <div className="my-6 flex items-center gap-3">
+      <div className="h-px flex-1 bg-zinc-300" />
+      <span className="whitespace-nowrap text-xs font-medium text-zinc-400">지난 주차</span>
+      <div className="h-px flex-1 bg-zinc-300" />
+    </div>
   )
 }
 

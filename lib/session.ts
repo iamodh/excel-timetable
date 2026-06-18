@@ -1,4 +1,4 @@
-import type { TimetableData } from "./parser"
+import type { TimetableData, Week } from "./parser"
 
 function parsePeriodStart(period: string): Date | null {
   const match = period.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/)
@@ -6,27 +6,72 @@ function parsePeriodStart(period: string): Date | null {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
 
-function getSessionRange(session: TimetableData): { start: Date; end: Date } | null {
+function periodYearContext(session: TimetableData): {
+  baseYear: number
+  startMonth: number | null
+} {
   const periodStart = parsePeriodStart(session.period)
-  const baseYear = periodStart ? periodStart.getFullYear() : new Date().getFullYear()
-  const startMonth = periodStart ? periodStart.getMonth() + 1 : null
-
-  const allDates: Date[] = []
-  for (const week of session.weeks) {
-    for (const day of week.days) {
-      // 수업이 하나도 없는 날짜 헤더는 회차 범위에서 제외한다 (마지막 주에 빈 날짜 칸이 남는 시트 대응)
-      if (!day.date || !day.slots.some((slot) => slot.title)) continue
-
-      const [month, dayNum] = day.date.split("/").map(Number)
-      // 그리드 날짜는 M/D 형식 — period 시작 월보다 앞선 월은 해를 넘긴 것으로 본다
-      const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
-      allDates.push(new Date(year, month - 1, dayNum))
-    }
+  return {
+    baseYear: periodStart ? periodStart.getFullYear() : new Date().getFullYear(),
+    startMonth: periodStart ? periodStart.getMonth() + 1 : null,
   }
+}
+
+// 주차 내 실제 수업일(제목 있는 슬롯이 있는 날)의 날짜 목록.
+// 그리드 날짜는 M/D 형식 — period 시작 월보다 앞선 월은 해를 넘긴 것으로 본다.
+function weekClassDates(
+  week: Week,
+  baseYear: number,
+  startMonth: number | null,
+): Date[] {
+  const dates: Date[] = []
+  for (const day of week.days) {
+    // 수업이 하나도 없는 날짜 헤더는 제외한다 (마지막 주에 빈 날짜 칸이 남는 시트 대응)
+    if (!day.date || !day.slots.some((slot) => slot.title)) continue
+
+    const [month, dayNum] = day.date.split("/").map(Number)
+    const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
+    dates.push(new Date(year, month - 1, dayNum))
+  }
+  return dates
+}
+
+function startOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+}
+
+function getSessionRange(session: TimetableData): { start: Date; end: Date } | null {
+  const { baseYear, startMonth } = periodYearContext(session)
+  const allDates = session.weeks.flatMap((week) =>
+    weekClassDates(week, baseYear, startMonth)
+  )
   if (allDates.length === 0) return null
 
   allDates.sort((a, b) => a.getTime() - b.getTime())
   return { start: allDates[0], end: allDates[allDates.length - 1] }
+}
+
+// 마지막 수업일이 지난(< 오늘, 날짜 단위) 주차를 past로 분리한다.
+// 마지막 수업일 당일은 지나지 않은 것으로 보아 upcoming에 남긴다.
+// 입력 weeks가 주차 오름차순이므로 두 그룹 모두 오름차순을 유지한다.
+export function partitionWeeksByRecency(
+  session: TimetableData,
+  today: Date,
+): { upcoming: Week[]; past: Week[] } {
+  const { baseYear, startMonth } = periodYearContext(session)
+  const todayStart = startOfDay(today)
+  const upcoming: Week[] = []
+  const past: Week[] = []
+
+  for (const week of session.weeks) {
+    const dates = weekClassDates(week, baseYear, startMonth)
+    const lastDate =
+      dates.length > 0 ? Math.max(...dates.map((d) => startOfDay(d))) : null
+    if (lastDate !== null && lastDate < todayStart) past.push(week)
+    else upcoming.push(week)
+  }
+
+  return { upcoming, past }
 }
 
 function hasPeriodStarted(session: TimetableData, today: Date): boolean {
