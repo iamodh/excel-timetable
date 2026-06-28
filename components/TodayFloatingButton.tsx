@@ -12,12 +12,12 @@ function formatToday(date: Date): string {
   const month = date.getMonth() + 1
   const day = date.getDate()
   const weekday = WEEKDAYS[date.getDay()]
-  return `오늘은 ${month}/${day}(${weekday})이에요!`
+  return `오늘은 ${month}/${day}(${weekday})`
 }
 
 export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] }) {
   const [open, setOpen] = useState(false)
-  const label = formatToday(new Date())
+  const dateText = formatToday(new Date())
 
   return (
     <>
@@ -26,25 +26,25 @@ export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] })
           type="button"
           onClick={() => setOpen(true)}
           className="fixed bottom-4 right-4 z-30 flex items-center gap-2 rounded-full bg-white py-2 pl-4 pr-2 shadow-lg ring-1 ring-zinc-200 transition hover:shadow-xl active:scale-95"
-          aria-label={label}
+          aria-label={`${dateText}!`}
         >
-          <span className="text-sm font-semibold text-zinc-800">{label}</span>
+          <span className="text-sm font-semibold text-zinc-800">{dateText}!</span>
           <Image src="/toduck.svg" alt="토더기" width={32} height={32} className="h-8 w-8" />
         </button>
       )}
       {open && (
-        <TodayModal label={label} sessions={sessions} onClose={() => setOpen(false)} />
+        <TodayModal dateText={dateText} sessions={sessions} onClose={() => setOpen(false)} />
       )}
     </>
   )
 }
 
 function TodayModal({
-  label,
+  dateText,
   sessions,
   onClose,
 }: {
-  label: string
+  dateText: string
   sessions: TimetableData[]
   onClose: () => void
 }) {
@@ -64,7 +64,7 @@ function TodayModal({
         <div className="flex items-center gap-3">
           <Image src="/toduck.svg" alt="토더기" width={48} height={48} className="h-12 w-12" />
           <div>
-            <div className="text-lg font-bold text-zinc-900">{label}</div>
+            <div className="text-lg font-bold text-zinc-900">{dateText}이에요!</div>
             {nextClass && (
               <div className="mt-0.5 text-sm text-zinc-600">
                 다음 수업은{" "}
