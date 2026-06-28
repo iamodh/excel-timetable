@@ -3,6 +3,7 @@ import Link from "next/link"
 import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { AuthGate } from "@/components/AuthGate"
+import { TodayFloatingButton } from "@/components/TodayFloatingButton"
 import { getNotice } from "@/lib/notice"
 
 async function NoticeBanner() {
@@ -73,6 +74,7 @@ export default function TimetablePage() {
               <span>가이드</span>
             </Link>
           </div>
+          <TodayFloatingButton />
         </AuthGate>
       </Suspense>
     </div>
