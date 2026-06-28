@@ -1,5 +1,4 @@
 import { Suspense } from "react"
-import Link from "next/link"
 import { getAllTimetableData } from "@/lib/sheets"
 import { SessionTabs } from "@/components/SessionTabs"
 import { AuthGate } from "@/components/AuthGate"
@@ -70,15 +69,6 @@ export default function TimetablePage() {
           <Suspense fallback={<TimetableLoading />}>
             <VisibleSessionTabs />
           </Suspense>
-          <div className="max-w-4xl mx-auto mt-6 pb-4 text-center">
-            <Link
-              href="/guide"
-              className="inline-flex items-center gap-1.5 py-2 text-sm text-zinc-600 hover:text-zinc-900"
-            >
-              <span>📖</span>
-              <span>가이드</span>
-            </Link>
-          </div>
           <Suspense fallback={null}>
             <TodayWidget />
           </Suspense>
