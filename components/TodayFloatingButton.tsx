@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useState } from "react"
 import type { TimetableData } from "@/lib/parser"
 import { computeOverallProgress } from "@/lib/progress"
+import { findNextClass } from "@/lib/session"
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"]
 
@@ -47,7 +48,9 @@ function TodayModal({
   sessions: TimetableData[]
   onClose: () => void
 }) {
-  const progress = computeOverallProgress(sessions, new Date())
+  const now = new Date()
+  const progress = computeOverallProgress(sessions, now)
+  const nextClass = findNextClass(sessions, now)
 
   return (
     <div
@@ -60,7 +63,19 @@ function TodayModal({
       >
         <div className="flex items-center gap-3">
           <Image src="/toduck.svg" alt="토더기" width={48} height={48} className="h-12 w-12" />
-          <div className="text-lg font-bold text-zinc-900">{label}</div>
+          <div>
+            <div className="text-lg font-bold text-zinc-900">{label}</div>
+            {nextClass && (
+              <div className="mt-0.5 text-sm text-zinc-600">
+                다음 수업은{" "}
+                <span className="font-medium text-zinc-800">{nextClass.title}</span>
+                예요
+                <span className="block text-xs text-zinc-400">
+                  {nextClass.date}({nextClass.dayOfWeek}) {nextClass.startTime}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="my-4 border-t border-zinc-200" />
@@ -110,7 +125,7 @@ function ProgressBody({
   const headline =
     phase === "done"
       ? "수료 완료 🎉"
-      : `${pastHours} / ${totalHours}시간 함께했어요`
+      : `지금까지 ${pastHours} / ${totalHours}시간 함께했어요`
 
   return (
     <div>

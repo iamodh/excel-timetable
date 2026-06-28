@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { determineCurrentSession, filterVisibleSessions, partitionWeeksByRecency } from "./session"
+import {
+  determineCurrentSession,
+  filterVisibleSessions,
+  findNextClass,
+  partitionWeeksByRecency,
+} from "./session"
 import type { TimetableData, Slot, Week } from "./parser"
 
 function makeSlot(title: string): Slot {
@@ -230,5 +235,101 @@ describe("partitionWeeksByRecency", () => {
     const { upcoming, past } = partitionWeeksByRecency(session, today)
     expect(upcoming.map((w) => w.weekNumber)).toEqual([1, 2])
     expect(past).toEqual([])
+  })
+})
+
+describe("findNextClass", () => {
+  function makeTimedSlot(
+    title: string,
+    startTime: string,
+    isMergedContinuation = false,
+  ): Slot {
+    return {
+      startTime,
+      endTime: "",
+      title,
+      subtitle: null,
+      bgColor: "#ffffff",
+      textColor: "#000000",
+      rowSpan: 1,
+      isMergedContinuation,
+      venue: null,
+    }
+  }
+
+  it("전 회차에서 오늘(일 단위) 이후 가장 이른 수업을 반환한다 — 지난 날짜·병합 연속 셀 제외, 시각 지난 오늘 수업은 포함", () => {
+    const sessions: TimetableData[] = [
+      {
+        programName: "1회차",
+        period: "2026.06.01 ~ 2026.07.31",
+        location: "",
+        totalHours: "",
+        categories: [],
+        weeks: [
+          {
+            weekNumber: 1,
+            days: [
+              { dayOfWeek: "일", date: "6/28", slots: [makeTimedSlot("어제수업", "10:00")] }, // 지난 날짜 → 제외
+              {
+                dayOfWeek: "월",
+                date: "6/29",
+                slots: [
+                  makeTimedSlot("연속", "09:00", true), // 병합 연속 → 제외
+                  makeTimedSlot("오늘오전", "10:00"), // 12:00 이전이지만 오늘이라 포함
+                  makeTimedSlot("오늘오후", "14:00"),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        programName: "2회차",
+        period: "2026.06.20 ~ 2026.08.31",
+        location: "",
+        totalHours: "",
+        categories: [],
+        weeks: [
+          {
+            weekNumber: 1,
+            days: [
+              { dayOfWeek: "화", date: "6/30", slots: [makeTimedSlot("내일수업", "09:00")] },
+            ],
+          },
+        ],
+      },
+    ]
+
+    // 6/29 12:00 기준 → 오늘 수업 중 시작 시각이 가장 이른 오늘오전(10:00)
+    const next = findNextClass(sessions, new Date(2026, 5, 29, 12, 0))
+
+    expect(next).toEqual({
+      date: "6/29",
+      dayOfWeek: "월",
+      startTime: "10:00",
+      title: "오늘오전",
+    })
+  })
+
+  it("이후 수업이 없으면 null을 반환한다", () => {
+    const sessions: TimetableData[] = [
+      {
+        programName: "1회차",
+        period: "2026.06.01 ~ 2026.07.31",
+        location: "",
+        totalHours: "",
+        categories: [],
+        weeks: [
+          {
+            weekNumber: 1,
+            days: [
+              { dayOfWeek: "월", date: "6/29", slots: [makeTimedSlot("수업", "10:00")] },
+            ],
+          },
+        ],
+      },
+    ]
+
+    expect(findNextClass(sessions, new Date(2026, 7, 1))).toBeNull()
   })
 })

@@ -64,6 +64,63 @@ export function getSessionClassDays(session: TimetableData): ClassDay[] {
   return days
 }
 
+export interface NextClass {
+  date: string // "M/D"
+  dayOfWeek: string
+  startTime: string // "HH:MM"
+  title: string
+}
+
+function parseClassStart(
+  date: string,
+  startTime: string,
+  baseYear: number,
+  startMonth: number | null,
+): Date {
+  const [month, dayNum] = date.split("/").map(Number)
+  const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
+  const [hour, minute] = startTime.split(":").map(Number)
+  return new Date(year, month - 1, dayNum, hour || 0, minute || 0)
+}
+
+// 전 회차를 통틀어 오늘(날짜 단위) 이후 가장 이른 수업을 찾는다.
+// 일 단위 비교 — 시각이 지난 오늘 수업도 포함하며, 같은 날 안에서는 시작 시각이 이른 수업을 반환한다. 없으면 null.
+export function findNextClass(
+  sessions: TimetableData[],
+  now: Date,
+): NextClass | null {
+  const todayStart = startOfDay(now)
+  let best: { time: number; info: NextClass } | null = null
+
+  for (const session of sessions) {
+    const { baseYear, startMonth } = periodYearContext(session)
+    for (const week of session.weeks) {
+      for (const day of week.days) {
+        if (!day.date) continue
+        for (const slot of day.slots) {
+          if (!slot.title || slot.isMergedContinuation) continue
+          const start = parseClassStart(day.date, slot.startTime, baseYear, startMonth)
+          if (startOfDay(start) < todayStart) continue
+          const time = start.getTime()
+          if (!best || time < best.time) {
+            best = {
+              time,
+              info: {
+                date: day.date,
+                dayOfWeek: day.dayOfWeek,
+                startTime: slot.startTime,
+                title: slot.title,
+              },
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return best?.info ?? null
+}
+
 function startOfDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 }
