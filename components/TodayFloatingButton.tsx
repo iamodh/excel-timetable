@@ -24,7 +24,7 @@ export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] })
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 z-30 flex items-center gap-2 rounded-full bg-white py-2 pl-4 pr-2 shadow-lg ring-1 ring-zinc-200 transition hover:shadow-xl active:scale-95"
+          className="fixed bottom-20 right-4 z-30 flex items-center gap-2 rounded-full bg-white py-2 pl-4 pr-2 shadow-lg ring-1 ring-zinc-200 transition hover:shadow-xl active:scale-95"
           aria-label={label}
         >
           <span className="text-sm font-semibold text-zinc-800">{label}</span>
