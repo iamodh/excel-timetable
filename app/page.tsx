@@ -25,6 +25,11 @@ async function VisibleSessionTabs() {
   return <SessionTabs sessions={sessions} />
 }
 
+async function TodayWidget() {
+  const sessions = await getAllTimetableData()
+  return <TodayFloatingButton sessions={sessions} />
+}
+
 function TimetableLoading() {
   return (
     <div className="max-w-4xl mx-auto py-12 flex flex-col items-center gap-3 text-zinc-500">
@@ -74,7 +79,9 @@ export default function TimetablePage() {
               <span>가이드</span>
             </Link>
           </div>
-          <TodayFloatingButton />
+          <Suspense fallback={null}>
+            <TodayWidget />
+          </Suspense>
         </AuthGate>
       </Suspense>
     </div>
