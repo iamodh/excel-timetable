@@ -17,23 +17,51 @@ function periodYearContext(session: TimetableData): {
   }
 }
 
-// 주차 내 실제 수업일(제목 있는 슬롯이 있는 날)의 날짜 목록.
+export interface ClassDay {
+  date: Date
+  hours: number // 그 날 수업 시간(차시) — 제목 있는 비병합 슬롯의 rowSpan 합
+}
+
+// 주차 내 실제 수업일(제목 있는 슬롯이 있는 날)의 날짜·시간 목록.
 // 그리드 날짜는 M/D 형식 — period 시작 월보다 앞선 월은 해를 넘긴 것으로 본다.
-function weekClassDates(
+function weekClassDays(
   week: Week,
   baseYear: number,
   startMonth: number | null,
-): Date[] {
-  const dates: Date[] = []
+): ClassDay[] {
+  const result: ClassDay[] = []
   for (const day of week.days) {
     // 수업이 하나도 없는 날짜 헤더는 제외한다 (마지막 주에 빈 날짜 칸이 남는 시트 대응)
     if (!day.date || !day.slots.some((slot) => slot.title)) continue
 
     const [month, dayNum] = day.date.split("/").map(Number)
     const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
-    dates.push(new Date(year, month - 1, dayNum))
+    // 병합 연속 셀은 위 셀에 이미 rowSpan으로 합산돼 있으므로 제외한다
+    const hours = day.slots.reduce(
+      (sum, slot) => sum + (slot.title && !slot.isMergedContinuation ? slot.rowSpan : 0),
+      0,
+    )
+    result.push({ date: new Date(year, month - 1, dayNum), hours })
   }
-  return dates
+  return result
+}
+
+function weekClassDates(
+  week: Week,
+  baseYear: number,
+  startMonth: number | null,
+): Date[] {
+  return weekClassDays(week, baseYear, startMonth).map((d) => d.date)
+}
+
+// 회차 전체의 수업일(날짜·시간)을 날짜 오름차순으로 반환한다.
+export function getSessionClassDays(session: TimetableData): ClassDay[] {
+  const { baseYear, startMonth } = periodYearContext(session)
+  const days = session.weeks.flatMap((week) =>
+    weekClassDays(week, baseYear, startMonth)
+  )
+  days.sort((a, b) => a.date.getTime() - b.date.getTime())
+  return days
 }
 
 function startOfDay(d: Date): number {
