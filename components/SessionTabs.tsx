@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
-import {
-  determineCurrentSession,
-  filterVisibleSessions,
-  partitionWeeksByRecency,
-} from "@/lib/session"
+import { getVisibleWindow, partitionWeeksByRecency } from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
 
 type SelectedSlot = { slot: Slot; date: string; dayOfWeek: string }
@@ -18,17 +14,21 @@ export function SessionTabs({
   sessions: TimetableData[]
   highlightCategory?: string
 }) {
-  const visibleSessions = filterVisibleSessions(sessions, new Date())
-  const [current, setCurrent] = useState(() =>
-    determineCurrentSession(visibleSessions)
+  const { sessions: visibleSessions, currentIndex } = getVisibleWindow(
+    sessions,
+    new Date()
   )
+  const [current, setCurrent] = useState(currentIndex)
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null)
   const navRef = useRef<HTMLElement>(null)
+  const currentTabRef = useRef<HTMLButtonElement>(null)
 
+  // 초기 마운트 시 오늘 회차 탭이 좌측에 오도록 스크롤 (지난 회차는 좌측에 가려둔다)
   useEffect(() => {
     const nav = navRef.current
-    if (!nav) return
-    nav.scrollLeft = nav.scrollWidth
+    const tab = currentTabRef.current
+    if (!nav || !tab) return
+    nav.scrollLeft = tab.offsetLeft - nav.offsetLeft
   }, [])
 
   const data = visibleSessions[current]
@@ -47,6 +47,7 @@ export function SessionTabs({
         {visibleSessions.map((s, i) => (
           <button
             key={i}
+            ref={i === currentIndex ? currentTabRef : undefined}
             onClick={() => setCurrent(i)}
             className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               i === current

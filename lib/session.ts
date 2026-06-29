@@ -159,41 +159,57 @@ export function partitionWeeksByRecency(
   return { upcoming, past }
 }
 
-function hasPeriodStarted(session: TimetableData, today: Date): boolean {
+function parsePeriodEnd(period: string): Date | null {
+  const matches = [...period.matchAll(/(\d{4})\.(\d{1,2})\.(\d{1,2})/g)]
+  if (matches.length === 0) return null
+  const m = matches[matches.length - 1]
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+}
+
+// 회차의 시작·종료일 — 그리드 수업일 기준, 없으면 period 텍스트로 폴백한다.
+function sessionBounds(session: TimetableData): { start: Date; end: Date } | null {
+  const range = getSessionRange(session)
+  if (range) return range
+
   const start = parsePeriodStart(session.period)
-  if (!start) return true
-  return start.getTime() <= today.getTime()
+  const end = parsePeriodEnd(session.period)
+  if (start && end) return { start, end }
+  if (start) return { start, end: start }
+  return null
 }
 
-export function filterVisibleSessions(sessions: TimetableData[], today: Date): TimetableData[] {
-  return sessions.filter((s, i) => {
-    if (i === 0) return hasPeriodStarted(s, today)
-
-    const prevRange = getSessionRange(sessions[i - 1])
-    if (!prevRange) return hasPeriodStarted(s, today)
-
-    const prevEnd = new Date(prevRange.end)
-    prevEnd.setHours(23, 59, 59, 999)
-    return today.getTime() > prevEnd.getTime()
-  })
+export interface VisibleWindow {
+  sessions: TimetableData[]
+  currentIndex: number // sessions 내 오늘 회차 위치 (초기 스크롤·선택 타겟)
 }
 
-export function determineCurrentSession(sessions: TimetableData[]): number {
-  const today = new Date()
-  const todayTime = today.getTime()
+// 오늘 기준 노출 범위를 정한다.
+// - 오늘 회차 = 아직 종료되지 않은(마지막 수업일 >= 오늘) 첫 회차. 회차 사이 공백이면 곧 시작할 회차.
+// - 지난 회차는 탭으로 남기고(스크롤 가능), 미래는 다음 회차까지만 노출한다 (그 너머는 제외).
+// - currentIndex로 오늘 회차 위치를 알려 초기 스크롤·선택을 맞춘다.
+// - 교육 기간 전(첫 회차 시작 전)이면 빈 창을 반환한다.
+// - 모든 회차 종료 후에는 전체를 노출하고 마지막 회차를 가리킨다.
+export function getVisibleWindow(sessions: TimetableData[], today: Date): VisibleWindow {
+  if (sessions.length === 0) return { sessions: [], currentIndex: 0 }
+  const todayStart = startOfDay(today)
 
+  const firstBounds = sessions
+    .map(sessionBounds)
+    .find((b): b is { start: Date; end: Date } => b !== null)
+  if (firstBounds && startOfDay(firstBounds.start) > todayStart) {
+    return { sessions: [], currentIndex: 0 }
+  }
+
+  // 종료되지 않은 첫 회차를 오늘 회차로 본다. 없으면(모두 종료) 마지막 회차.
+  let currentIndex = sessions.length - 1
   for (let i = 0; i < sessions.length; i++) {
-    const range = getSessionRange(sessions[i])
-    if (!range) continue
-
-    const startTime = range.start.setHours(0, 0, 0, 0)
-    const endTime = range.end.setHours(23, 59, 59, 999)
-
-    if (todayTime >= startTime && todayTime <= endTime) {
-      return i
+    const bounds = sessionBounds(sessions[i])
+    if (bounds && startOfDay(bounds.end) >= todayStart) {
+      currentIndex = i
+      break
     }
   }
 
-  // 어느 회차 범위에도 속하지 않으면(회차 사이 공백 등) 가장 최근에 공개된 회차를 보여준다
-  return Math.max(0, sessions.length - 1)
+  // 지난 회차는 유지, 미래는 다음 회차까지만 노출
+  return { sessions: sessions.slice(0, currentIndex + 2), currentIndex }
 }
