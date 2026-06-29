@@ -61,7 +61,7 @@ export function SessionTabs({
                 : "bg-white text-zinc-600 hover:bg-zinc-100"
             }`}
           >
-            {s.programName}
+            {s.programName.includes("5회차") ? `${s.programName} (미확정)` : s.programName}
           </button>
         ))}
       </nav>
