@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
 import { getVisibleWindow, partitionWeeksByRecency } from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
+import { useExitTransition } from "./useExitTransition"
 
 type SelectedSlot = { slot: Slot; date: string; dayOfWeek: string }
 
@@ -20,6 +21,11 @@ export function SessionTabs({
   )
   const [current, setCurrent] = useState(currentIndex)
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null)
+  // 닫는 동안 바텀시트를 잠시 유지해 닫기 애니메이션을 보여준다
+  const { rendered: sheetSlot, closing: sheetClosing } = useExitTransition(
+    selectedSlot,
+    200
+  )
   const navRef = useRef<HTMLElement>(null)
   const currentTabRef = useRef<HTMLButtonElement>(null)
 
@@ -66,7 +72,11 @@ export function SessionTabs({
         highlightCategory={highlightCategory}
         onSelectSlot={setSelectedSlot}
       />
-      <VenueSheet selected={selectedSlot} onClose={() => setSelectedSlot(null)} />
+      <VenueSheet
+        selected={sheetSlot}
+        closing={sheetClosing}
+        onClose={() => setSelectedSlot(null)}
+      />
     </>
   )
 }
@@ -262,9 +272,11 @@ function SlotCell({
 
 function VenueSheet({
   selected,
+  closing,
   onClose,
 }: {
   selected: SelectedSlot | null
+  closing: boolean
   onClose: () => void
 }) {
   if (!selected) return null
@@ -273,8 +285,21 @@ function VenueSheet({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 animate-[slideUp_0.2s_ease-out] rounded-t-2xl bg-white p-5 shadow-2xl">
+      <div
+        className={`fixed inset-0 z-40 bg-black/30 ${
+          closing
+            ? "animate-[fadeOut_0.2s_ease-in_forwards]"
+            : "animate-[fadeIn_0.2s_ease-out]"
+        }`}
+        onClick={onClose}
+      />
+      <div
+        className={`fixed inset-x-0 bottom-0 z-50 rounded-t-2xl bg-white p-5 shadow-2xl ${
+          closing
+            ? "animate-[slideDown_0.2s_ease-in_forwards]"
+            : "animate-[slideUp_0.2s_ease-out]"
+        }`}
+      >
         <div className="mx-auto max-w-md">
           <div className="text-sm text-zinc-500">
             {date}({dayOfWeek}) {slot.startTime}

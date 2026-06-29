@@ -5,6 +5,7 @@ import { useState } from "react"
 import type { TimetableData } from "@/lib/parser"
 import { computeOverallProgress } from "@/lib/progress"
 import { findNextClass } from "@/lib/session"
+import { useExitTransition } from "./useExitTransition"
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"]
 
@@ -18,10 +19,12 @@ function formatToday(date: Date): string {
 export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] }) {
   const [open, setOpen] = useState(false)
   const dateText = formatToday(new Date())
+  // 닫는 동안 모달을 잠시 유지해 닫기 애니메이션을 보여준다 (애니메이션이 끝나야 버튼이 다시 나타남)
+  const { rendered, closing } = useExitTransition(open ? true : null, 180)
 
   return (
     <>
-      {!open && (
+      {!rendered && (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -32,8 +35,13 @@ export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] })
           <Image src="/toduck.svg" alt="토더기" width={32} height={32} className="h-8 w-8" />
         </button>
       )}
-      {open && (
-        <TodayModal dateText={dateText} sessions={sessions} onClose={() => setOpen(false)} />
+      {rendered && (
+        <TodayModal
+          dateText={dateText}
+          sessions={sessions}
+          closing={closing}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   )
@@ -42,10 +50,12 @@ export function TodayFloatingButton({ sessions }: { sessions: TimetableData[] })
 function TodayModal({
   dateText,
   sessions,
+  closing,
   onClose,
 }: {
   dateText: string
   sessions: TimetableData[]
+  closing: boolean
   onClose: () => void
 }) {
   const now = new Date()
@@ -54,11 +64,19 @@ function TodayModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 ${
+        closing
+          ? "animate-[fadeOut_0.18s_ease-in_forwards]"
+          : "animate-[fadeIn_0.18s_ease-out]"
+      }`}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm animate-[popIn_0.18s_ease-out] rounded-2xl bg-white p-5 shadow-2xl"
+        className={`w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl ${
+          closing
+            ? "animate-[popOut_0.18s_ease-in_forwards]"
+            : "animate-[popIn_0.18s_ease-out]"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3">
