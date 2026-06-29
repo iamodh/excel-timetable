@@ -8,7 +8,7 @@ function makeSlot(title: string, rowSpan = 1, isMergedContinuation = false): Slo
     endTime: "11:00",
     title,
     subtitle: null,
-    bgColor: "#ffffff",
+    bgColor: "#a6e3b6",
     textColor: "#000000",
     rowSpan,
     isMergedContinuation,

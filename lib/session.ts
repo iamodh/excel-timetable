@@ -1,4 +1,14 @@
-import type { TimetableData, Week } from "./parser"
+import type { Slot, TimetableData, Week } from "./parser"
+
+// 정상 수업 슬롯 판정 — 제목이 있고, 병합 연속 셀이 아니며, 색이 칠해진 칸.
+// 무색(toHexColor가 배경 없는 셀을 "#ffffff"로 반환)은 공휴일·휴무 칸이므로 수업으로 보지 않는다.
+function isClassSlot(slot: Slot): boolean {
+  return (
+    Boolean(slot.title) &&
+    !slot.isMergedContinuation &&
+    slot.bgColor.toLowerCase() !== "#ffffff"
+  )
+}
 
 function parsePeriodStart(period: string): Date | null {
   const match = period.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/)
@@ -31,14 +41,14 @@ function weekClassDays(
 ): ClassDay[] {
   const result: ClassDay[] = []
   for (const day of week.days) {
-    // 수업이 하나도 없는 날짜 헤더는 제외한다 (마지막 주에 빈 날짜 칸이 남는 시트 대응)
-    if (!day.date || !day.slots.some((slot) => slot.title)) continue
+    // 수업 슬롯이 하나도 없는 날짜 헤더는 제외한다
+    // (마지막 주의 빈 날짜 칸, 공휴일·휴무만 있는 날 대응)
+    if (!day.date || !day.slots.some(isClassSlot)) continue
 
     const [month, dayNum] = day.date.split("/").map(Number)
     const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
-    // 병합 연속 셀은 위 셀에 이미 rowSpan으로 합산돼 있으므로 제외한다
     const hours = day.slots.reduce(
-      (sum, slot) => sum + (slot.title && !slot.isMergedContinuation ? slot.rowSpan : 0),
+      (sum, slot) => sum + (isClassSlot(slot) ? slot.rowSpan : 0),
       0,
     )
     result.push({ date: new Date(year, month - 1, dayNum), hours })
@@ -98,7 +108,7 @@ export function findNextClass(
       for (const day of week.days) {
         if (!day.date) continue
         for (const slot of day.slots) {
-          if (!slot.title || slot.isMergedContinuation) continue
+          if (!isClassSlot(slot)) continue
           const start = parseClassStart(day.date, slot.startTime, baseYear, startMonth)
           if (startOfDay(start) < todayStart) continue
           const time = start.getTime()

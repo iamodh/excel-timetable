@@ -1,18 +1,20 @@
 import { describe, it, expect } from "vitest"
 import {
+  getSessionClassDays,
   getVisibleWindow,
   findNextClass,
   partitionWeeksByRecency,
 } from "./session"
 import type { TimetableData, Slot, Week } from "./parser"
 
+// 정상 수업은 항상 카테고리 색을 가진다 — 무색(#ffffff)은 공휴일·휴무 칸이다
 function makeSlot(title: string): Slot {
   return {
     startTime: "10:00",
     endTime: "11:00",
     title,
     subtitle: null,
-    bgColor: "#ffffff",
+    bgColor: "#a6e3b6",
     textColor: "#000000",
     rowSpan: 1,
     isMergedContinuation: false,
@@ -45,6 +47,58 @@ function makeSession(
     ],
   }
 }
+
+describe("getSessionClassDays", () => {
+  function slot(title: string, rowSpan: number, bgColor: string): Slot {
+    return {
+      startTime: "13:00",
+      endTime: "14:00",
+      title,
+      subtitle: null,
+      bgColor,
+      textColor: "#000000",
+      rowSpan,
+      isMergedContinuation: false,
+      venue: null,
+    }
+  }
+
+  it("무색(#ffffff·배경없음) 슬롯은 공휴일·휴무로 보아 시간 합산과 수업일에서 제외한다", () => {
+    const session: TimetableData = {
+      programName: "1회차",
+      period: "2026.05.01 ~ 2026.05.31",
+      location: "",
+      totalHours: "",
+      categories: [],
+      weeks: [
+        {
+          weekNumber: 1,
+          days: [
+            // 색 있는 수업 2h + 무색 휴무 8h 같은 날 → 색 있는 2h만 집계
+            {
+              dayOfWeek: "수",
+              date: "5/6",
+              slots: [slot("수업", 2, "#a6e3b6"), slot("근로자의 날 휴무", 8, "#ffffff")],
+            },
+            // 무색 공휴일만 있는 날 → 수업일에서 제외
+            { dayOfWeek: "화", date: "5/5", slots: [slot("어린이날", 8, "#ffffff")] },
+            // 색 있는 수업만 → 그대로
+            { dayOfWeek: "목", date: "5/7", slots: [slot("수업", 4, "#ffc000")] },
+          ],
+        },
+      ],
+    }
+
+    const days = getSessionClassDays(session).map((d) => [
+      `${d.date.getMonth() + 1}/${d.date.getDate()}`,
+      d.hours,
+    ])
+    expect(days).toEqual([
+      ["5/6", 2],
+      ["5/7", 4],
+    ])
+  })
+})
 
 describe("getVisibleWindow", () => {
   function makeSessionWithPeriod(period: string, programName: string): TimetableData {
@@ -235,7 +289,7 @@ describe("findNextClass", () => {
       endTime: "",
       title,
       subtitle: null,
-      bgColor: "#ffffff",
+      bgColor: "#a6e3b6",
       textColor: "#000000",
       rowSpan: 1,
       isMergedContinuation,
