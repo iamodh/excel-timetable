@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { applyMerges, applyImplicitMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks, parseAuxTable, venueKey } from "./parser"
+import { applyMerges, applyImplicitMerges, parseHeader, parseGridSlots, parseCategories, parseWeekHeader, parseTimetable, parseSessionBlocks, parseAuxTable, venueKey, splitVenue } from "./parser"
 
 describe("parseCategories", () => {
   it("범례 행에서 카테고리명과 배경색을 추출한다", () => {
@@ -573,5 +573,28 @@ describe("parseAuxTable", () => {
     ]
 
     expect(parseAuxTable(rowData)).toEqual({})
+  })
+})
+
+describe("splitVenue", () => {
+  it("'장소/강사' 텍스트를 장소와 강사로 분리한다", () => {
+    expect(splitVenue("장유출장소/허은진")).toEqual({
+      place: "장유출장소",
+      instructor: "허은진",
+    })
+  })
+
+  it("강사가 비어 있으면(슬래시 뒤 공백) instructor는 null이다", () => {
+    expect(splitVenue("김해시서부보건소/")).toEqual({
+      place: "김해시서부보건소",
+      instructor: null,
+    })
+  })
+
+  it("슬래시가 없으면 전체를 장소로 보고 instructor는 null이다", () => {
+    expect(splitVenue("장유출장소")).toEqual({
+      place: "장유출장소",
+      instructor: null,
+    })
   })
 })

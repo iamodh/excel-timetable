@@ -294,6 +294,21 @@ export function parseAuxTable(rowData: RowData[]): VenueLookup {
   return lookup
 }
 
+export interface VenueParts {
+  place: string
+  instructor: string | null
+}
+
+// 보조 테이블의 "장소/강사" 자유 텍스트를 장소·강사로 분리한다.
+// 첫 슬래시 기준으로 나누고, 강사 부분이 비면 null.
+export function splitVenue(venue: string): VenueParts {
+  const idx = venue.indexOf("/")
+  if (idx === -1) return { place: venue.trim(), instructor: null }
+  const place = venue.slice(0, idx).trim()
+  const instructor = venue.slice(idx + 1).trim()
+  return { place, instructor: instructor || null }
+}
+
 export function parseTimetable(rowData: RowData[], merges: MergeRange[]): TimetableData {
   const categories = parseCategories(rowData.slice(0, 2))
   const header = parseHeader(rowData.slice(2, 4))

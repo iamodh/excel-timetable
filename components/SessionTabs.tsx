@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { TimetableData, Week, Slot, Category } from "@/lib/parser"
+import { splitVenue } from "@/lib/parser"
 import { getVisibleWindow, partitionWeeksByRecency } from "@/lib/session"
 import { shouldDimSlotForCategory } from "@/lib/categoryHighlight"
 import { useExitTransition } from "./useExitTransition"
@@ -309,10 +310,23 @@ function VenueSheet({
             <div className="mt-0.5 text-sm text-zinc-600">{slot.subtitle}</div>
           )}
           <div className="my-4 border-t border-zinc-200" />
-          <div className="flex items-start gap-2 text-zinc-800">
-            <span aria-hidden>📍</span>
-            <span className="whitespace-pre-wrap break-words">{slot.venue}</span>
-          </div>
+          {(() => {
+            const { place, instructor } = splitVenue(slot.venue ?? "")
+            return (
+              <div className="space-y-2 text-zinc-800">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 text-zinc-500">장소 :</span>
+                  <span className="whitespace-pre-wrap break-words">{place}</span>
+                </div>
+                {instructor && (
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 text-zinc-500">강사명 :</span>
+                    <span className="whitespace-pre-wrap break-words">{instructor}</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
           <button
             onClick={onClose}
             className="mt-5 w-full rounded-lg bg-zinc-800 py-2.5 text-sm font-medium text-white"
