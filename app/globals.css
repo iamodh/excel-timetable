@@ -77,3 +77,30 @@ body {
     opacity: 0;
   }
 }
+
+/* 토더기 버튼이 클릭 가능함을 알리는 주기적 바운스 (4초마다 살짝 톡) */
+@keyframes attentionBounce {
+  0%,
+  88%,
+  100% {
+    transform: translateY(0);
+  }
+  92% {
+    transform: translateY(-6px);
+  }
+  96% {
+    transform: translateY(-2px);
+  }
+}
+
+.toduck-attention {
+  /* 등장(0.2초) 후 이어서 주기적 바운스 */
+  animation: popIn 0.2s ease-out, attentionBounce 4s ease-in-out 0.2s infinite;
+}
+
+/* "동작 줄이기"를 켠 사용자에게는 반복 모션을 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  .toduck-attention {
+    animation: none;
+  }
+}
