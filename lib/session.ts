@@ -32,6 +32,20 @@ export interface ClassDay {
   hours: number // 그 날 수업 시간(차시) — 제목 있는 비병합 슬롯의 rowSpan 합
 }
 
+// 수업 슬롯 하나 단위의 이수 블록 — 진행도 집계의 기본 단위.
+export interface ClassBlock {
+  date: Date // 수업 날짜(시각 0시) — 개강·수료 단계 판정용
+  end: Date // 그 수업 슬롯의 종료 시각 — 이수(완료) 판정 기준
+  hours: number // 그 슬롯의 수업 시간(차시) = rowSpan
+}
+
+// "HH:MM" 종료 시각을 해당 날짜의 Date로 만든다. 파싱 불가 시 그날 끝(23:59)으로 폴백한다.
+function slotEnd(year: number, month: number, dayNum: number, endTime: string): Date {
+  const m = endTime.match(/(\d{1,2}):(\d{2})/)
+  if (!m) return new Date(year, month - 1, dayNum, 23, 59)
+  return new Date(year, month - 1, dayNum, Number(m[1]), Number(m[2]))
+}
+
 // 주차 내 실제 수업일(제목 있는 슬롯이 있는 날)의 날짜·시간 목록.
 // 그리드 날짜는 M/D 형식 — period 시작 월보다 앞선 월은 해를 넘긴 것으로 본다.
 function weekClassDays(
@@ -72,6 +86,30 @@ export function getSessionClassDays(session: TimetableData): ClassDay[] {
   )
   days.sort((a, b) => a.date.getTime() - b.date.getTime())
   return days
+}
+
+// 회차 전체의 수업 블록(슬롯 단위)을 날짜·시각 오름차순으로 반환한다.
+// 하루에 종료 시각이 다른 수업이 여럿일 때, 각 수업이 끝난 시점부터 이수로 잡기 위함.
+export function getSessionClassBlocks(session: TimetableData): ClassBlock[] {
+  const { baseYear, startMonth } = periodYearContext(session)
+  const blocks: ClassBlock[] = []
+  for (const week of session.weeks) {
+    for (const day of week.days) {
+      if (!day.date) continue
+      const [month, dayNum] = day.date.split("/").map(Number)
+      const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
+      for (const slot of day.slots) {
+        if (!isClassSlot(slot)) continue
+        blocks.push({
+          date: new Date(year, month - 1, dayNum),
+          end: slotEnd(year, month, dayNum, slot.endTime),
+          hours: slot.rowSpan,
+        })
+      }
+    }
+  }
+  blocks.sort((a, b) => a.end.getTime() - b.end.getTime())
+  return blocks
 }
 
 export interface NextClass {
