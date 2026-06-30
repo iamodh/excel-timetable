@@ -78,18 +78,28 @@ body {
   }
 }
 
-/* 토더기 버튼이 클릭 가능함을 알리는 주기적 바운스 (4초마다 살짝 톡) */
+/* 토더기 버튼이 클릭 가능함을 알리는 주기적 바운스 (4초마다 톡톡 두 번)
+   올라갈 땐 감속, 떨어질 땐 중력처럼 가속시켜 자연스러운 튐을 만든다 */
 @keyframes attentionBounce {
   0%,
-  88%,
-  100% {
+  84% {
     transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); /* 상승: 감속 */
+  }
+  88% {
+    transform: translateY(-7px);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.4); /* 하강: 가속 */
   }
   92% {
-    transform: translateY(-6px);
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
   }
   96% {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.4);
+  }
+  100% {
+    transform: translateY(0);
   }
 }
 
