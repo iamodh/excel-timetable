@@ -78,25 +78,37 @@ body {
   }
 }
 
-/* 토더기 버튼이 클릭 가능함을 알리는 주기적 바운스 (4초마다 톡톡 두 번)
-   올라갈 땐 감속, 떨어질 땐 중력처럼 가속시켜 자연스러운 튐을 만든다 */
+/* 토더기 버튼이 클릭 가능함을 알리는 주기적 바운스.
+   macOS dock 아이콘의 검증된 구현(michaelhue/cssdock: `bounce .3s 6 alternate ease-out`)을
+   그대로 재현: 반높이당 0.3초씩 3번 튄다. 올라갈 땐 감속(ease-out), 내려올 땐 가속(ease-in)해
+   중력처럼 보이는 게 핵심 — dock 원본은 이를 `alternate`로 얻지만, 여기선 4초 주기의
+   꼬리 구간에만 넣어야 해서 세그먼트별 timing-function으로 같은 물리를 직접 표현한다.
+   진폭은 dock(~50px 아이콘 기준 -20px ≈ 40%)을 우리 버튼 크기에 맞춰 -12px로 스케일. */
 @keyframes attentionBounce {
   0%,
-  84% {
+  55% {
     transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); /* 상승: 감속 */
+    animation-timing-function: ease-out; /* 상승: 감속 */
   }
-  88% {
-    transform: translateY(-7px);
-    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.4); /* 하강: 가속 */
+  62.5% {
+    transform: translateY(-12px);
+    animation-timing-function: ease-in; /* 하강: 가속 */
   }
-  92% {
+  70% {
     transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+    animation-timing-function: ease-out;
   }
-  96% {
-    transform: translateY(-3px);
-    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.4);
+  77.5% {
+    transform: translateY(-12px);
+    animation-timing-function: ease-in;
+  }
+  85% {
+    transform: translateY(0);
+    animation-timing-function: ease-out;
+  }
+  92.5% {
+    transform: translateY(-12px);
+    animation-timing-function: ease-in;
   }
   100% {
     transform: translateY(0);
@@ -104,8 +116,10 @@ body {
 }
 
 .toduck-attention {
-  /* 등장(0.2초) 후 이어서 주기적 바운스 */
-  animation: popIn 0.2s ease-out, attentionBounce 4s ease-in-out 0.2s infinite;
+  /* 등장(0.2초) 후 이어서 주기적 바운스 (세그먼트 timing으로 가속/감속을 제어하므로 linear) */
+  animation: popIn 0.2s ease-out, attentionBounce 4s linear 0.2s infinite;
+  /* 정지 구간에도 GPU 레이어를 유지해 튈 때 첫 프레임 끊김을 방지 */
+  will-change: transform;
 }
 
 /* "동작 줄이기"를 켠 사용자에게는 반복 모션을 끈다 */
