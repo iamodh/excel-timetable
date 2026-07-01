@@ -131,13 +131,13 @@ function parseClassStart(
   return new Date(year, month - 1, dayNum, hour || 0, minute || 0)
 }
 
-// 전 회차를 통틀어 오늘(날짜 단위) 이후 가장 이른 수업을 찾는다.
-// 일 단위 비교 — 시각이 지난 오늘 수업도 포함하며, 같은 날 안에서는 시작 시각이 이른 수업을 반환한다. 없으면 null.
+// 전 회차를 통틀어 아직 끝나지 않은 가장 이른 수업을 찾는다.
+// 진행도(progress)와 동일하게 종료 시각 기준(시·분 단위) — 오늘 이미 끝난 수업은 제외하고,
+// 진행 중인 수업은 아직 이수 전이므로 다음 수업으로 본다. 시작 시각이 이른 수업을 반환하며, 없으면 null.
 export function findNextClass(
   sessions: TimetableData[],
   now: Date,
 ): NextClass | null {
-  const todayStart = startOfDay(now)
   let best: { time: number; info: NextClass } | null = null
 
   for (const session of sessions) {
@@ -145,10 +145,13 @@ export function findNextClass(
     for (const week of session.weeks) {
       for (const day of week.days) {
         if (!day.date) continue
+        const [month, dayNum] = day.date.split("/").map(Number)
+        const year = startMonth !== null && month < startMonth ? baseYear + 1 : baseYear
         for (const slot of day.slots) {
           if (!isClassSlot(slot)) continue
+          const end = slotEnd(year, month, dayNum, slot.endTime)
+          if (end.getTime() <= now.getTime()) continue
           const start = parseClassStart(day.date, slot.startTime, baseYear, startMonth)
-          if (startOfDay(start) < todayStart) continue
           const time = start.getTime()
           if (!best || time < best.time) {
             best = {

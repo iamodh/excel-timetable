@@ -282,11 +282,12 @@ describe("findNextClass", () => {
   function makeTimedSlot(
     title: string,
     startTime: string,
+    endTime: string,
     isMergedContinuation = false,
   ): Slot {
     return {
       startTime,
-      endTime: "",
+      endTime,
       title,
       subtitle: null,
       bgColor: "#a6e3b6",
@@ -297,7 +298,7 @@ describe("findNextClass", () => {
     }
   }
 
-  it("전 회차에서 오늘(일 단위) 이후 가장 이른 수업을 반환한다 — 지난 날짜·병합 연속 셀 제외, 시각 지난 오늘 수업은 포함", () => {
+  it("전 회차에서 아직 끝나지 않은 가장 이른 수업을 반환한다 — 이미 끝난 오늘 수업·병합 연속 셀 제외, 진행 중인 수업은 포함", () => {
     const sessions: TimetableData[] = [
       {
         programName: "1회차",
@@ -309,14 +310,14 @@ describe("findNextClass", () => {
           {
             weekNumber: 1,
             days: [
-              { dayOfWeek: "일", date: "6/28", slots: [makeTimedSlot("어제수업", "10:00")] }, // 지난 날짜 → 제외
               {
                 dayOfWeek: "월",
                 date: "6/29",
                 slots: [
-                  makeTimedSlot("연속", "09:00", true), // 병합 연속 → 제외
-                  makeTimedSlot("오늘오전", "10:00"), // 12:00 이전이지만 오늘이라 포함
-                  makeTimedSlot("오늘오후", "14:00"),
+                  makeTimedSlot("연속", "09:00", "10:00", true), // 병합 연속 → 제외
+                  makeTimedSlot("오늘오전", "10:00", "11:30"), // 11:30 종료 → 12:00엔 이미 끝남 → 제외
+                  makeTimedSlot("진행중", "11:00", "13:00"), // 12:00엔 진행 중 → 포함
+                  makeTimedSlot("오늘오후", "14:00", "16:00"),
                 ],
               },
             ],
@@ -333,25 +334,25 @@ describe("findNextClass", () => {
           {
             weekNumber: 1,
             days: [
-              { dayOfWeek: "화", date: "6/30", slots: [makeTimedSlot("내일수업", "09:00")] },
+              { dayOfWeek: "화", date: "6/30", slots: [makeTimedSlot("내일수업", "09:00", "10:00")] },
             ],
           },
         ],
       },
     ]
 
-    // 6/29 12:00 기준 → 오늘 수업 중 시작 시각이 가장 이른 오늘오전(10:00)
+    // 6/29 12:00 기준 → 아직 안 끝난 수업 중 시작 시각이 가장 이른 진행중(11:00~13:00)
     const next = findNextClass(sessions, new Date(2026, 5, 29, 12, 0))
 
     expect(next).toEqual({
       date: "6/29",
       dayOfWeek: "월",
-      startTime: "10:00",
-      title: "오늘오전",
+      startTime: "11:00",
+      title: "진행중",
     })
   })
 
-  it("이후 수업이 없으면 null을 반환한다", () => {
+  it("끝나지 않은 수업이 없으면 null을 반환한다", () => {
     const sessions: TimetableData[] = [
       {
         programName: "1회차",
@@ -363,7 +364,7 @@ describe("findNextClass", () => {
           {
             weekNumber: 1,
             days: [
-              { dayOfWeek: "월", date: "6/29", slots: [makeTimedSlot("수업", "10:00")] },
+              { dayOfWeek: "월", date: "6/29", slots: [makeTimedSlot("수업", "10:00", "11:00")] },
             ],
           },
         ],
